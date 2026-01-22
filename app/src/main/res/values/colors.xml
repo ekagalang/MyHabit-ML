@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material 3 Colors - Light Theme -->
+    <color name="md_theme_primary">#6366F1</color>
+    <color name="md_theme_onPrimary">#FFFFFF</color>
+    <color name="md_theme_primaryContainer">#E0E7FF</color>
+    <color name="md_theme_onPrimaryContainer">#1E1B4B</color>
+
+    <color name="md_theme_secondary">#10B981</color>
+    <color name="md_theme_onSecondary">#FFFFFF</color>
+    <color name="md_theme_secondaryContainer">#D1FAE5</color>
+    <color name="md_theme_onSecondaryContainer">#064E3B</color>
+
+    <color name="md_theme_tertiary">#F59E0B</color>
+    <color name="md_theme_onTertiary">#FFFFFF</color>
+    <color name="md_theme_tertiaryContainer">#FEF3C7</color>
+    <color name="md_theme_onTertiaryContainer">#78350F</color>
+
+    <color name="md_theme_error">#EF4444</color>
+    <color name="md_theme_onError">#FFFFFF</color>
+    <color name="md_theme_errorContainer">#FEE2E2</color>
+    <color name="md_theme_onErrorContainer">#7F1D1D</color>
+
+    <color name="md_theme_background">#FFFFFF</color>
+    <color name="md_theme_onBackground">#1F2937</color>
+
+    <color name="md_theme_surface">#FFFFFF</color>
+    <color name="md_theme_onSurface">#1F2937</color>
+
+    <!-- Additional Colors -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>
