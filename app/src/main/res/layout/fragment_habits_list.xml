@@ -5,42 +5,31 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/md_theme_background">
+    android:background="@color/background_light"
+    android:paddingBottom="100dp">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="@color/md_theme_surface"
-        android:elevation="4dp"
+        android:background="@color/surface_light"
+        android:elevation="0dp"
         app:layout_constraintTop_toTopOf="parent"
         app:title="My Habits"
-        app:titleTextColor="@color/md_theme_onSurface">
+        app:titleTextColor="@color/text_main" />
 
-        <!-- Insights Button -->
-        <ImageButton
-            android:id="@+id/buttonInsights"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_gravity="end"
-            android:layout_marginEnd="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Insights"
-            android:src="@android:drawable/ic_menu_sort_by_size"
-            android:padding="12dp" />
-
-        <!-- Settings Menu -->
-        <ImageButton
-            android:id="@+id/buttonSettings"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_gravity="end"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Settings"
-            android:src="@android:drawable/ic_menu_preferences"
-            android:padding="12dp" />
-
-    </com.google.android.material.appbar.MaterialToolbar>
+    <ImageButton
+        android:id="@+id/btnInsights"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginEnd="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Insights"
+        android:src="@drawable/ic_insights"
+        app:layout_constraintBottom_toBottomOf="@id/toolbar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@color/text_main" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewHabits"

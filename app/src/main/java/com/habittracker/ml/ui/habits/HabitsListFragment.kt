@@ -48,8 +48,7 @@ class HabitsListFragment : Fragment() {
         textViewEmpty = view.findViewById(R.id.textViewEmpty)
         fabAddHabit = view.findViewById(R.id.fabAddHabit)
 
-        val buttonSettings = view.findViewById<android.widget.ImageButton>(R.id.buttonSettings)
-        val buttonInsights = view.findViewById<android.widget.ImageButton>(R.id.buttonInsights)
+        val buttonInsights = view.findViewById<android.widget.ImageButton>(R.id.btnInsights)
 
         // Setup ViewModel
         val database = HabitDatabase.getDatabase(requireContext())
@@ -94,11 +93,6 @@ class HabitsListFragment : Fragment() {
         // FAB click listener
         fabAddHabit.setOnClickListener {
             findNavController().navigate(R.id.action_habitsList_to_addEditHabit)
-        }
-
-        // Settings button click listener
-        buttonSettings.setOnClickListener {
-            findNavController().navigate(R.id.settingsFragment)
         }
 
         // TEST NOTIFICATION BUTTON

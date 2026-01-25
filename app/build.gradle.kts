@@ -1,18 +1,19 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.navigation.safeargs)
 }
 
 android {
     namespace = "com.habittracker.ml"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.habittracker.ml"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35  // UPDATE from 34 to 35
         versionCode = 1
         versionName = "1.0"
 
@@ -30,20 +31,22 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
 
     buildFeatures {
         viewBinding = true
+        compose = true
     }
 }
 
 dependencies {
+    // Existing dependencies (keep all of them)
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
@@ -73,17 +76,43 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 
-    // Calendar View
-    implementation("com.github.prolificinteractive:material-calendarview:2.0.1") {
-        exclude(group = "com.android.support")
-    }
-
-    // ThreeTenABP (required by material-calendarview)
-    implementation("com.jakewharton.threetenabp:threetenabp:1.4.7")
-
-    // Chart library (for future insights)
+    // Chart library
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
-    // Gson for JSON serialization
+    // Gson
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // ========== JETPACK COMPOSE (NEW) ==========
+
+    // Compose BOM (Bill of Materials)
+    implementation(platform("androidx.compose:compose-bom:2024.02.00"))
+
+    // Compose Core
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
+
+    // Compose Integration
+    implementation("androidx.activity:activity-compose:1.8.2")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
+    implementation("androidx.navigation:navigation-compose:2.7.6")
+
+    // Compose UI Tooling
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    // Compose Charts (Vico - Modern chart library)
+    implementation("com.patrykandpatrick.vico:compose:1.13.1")
+    implementation("com.patrykandpatrick.vico:compose-m3:1.13.1")
+    implementation("com.patrykandpatrick.vico:core:1.13.1")
+
+    // Coil for Image Loading (Compose)
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
+    // Accompanist (Compose utilities)
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
+    implementation("com.google.accompanist:accompanist-permissions:0.32.0")
 }

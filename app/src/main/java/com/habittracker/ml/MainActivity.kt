@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -18,6 +20,9 @@ import android.content.Context
 import android.content.Intent
 import com.habittracker.ml.utils.WorkManagerHelper
 import com.habittracker.ml.utils.ThemeManager
+import androidx.activity.compose.setContent
+import com.habittracker.ml.ui.MainScreen
+import com.habittracker.ml.ui.theme.MyHabitTheme
 
 class MainActivity : AppCompatActivity() {
 
@@ -31,37 +36,131 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // Navigation buttons
+    private lateinit var navHome: LinearLayout
+    private lateinit var navStats: LinearLayout
+    private lateinit var navProfile: LinearLayout
+
+    private lateinit var iconHome: TextView
+    private lateinit var iconStats: TextView
+    private lateinit var iconProfile: TextView
+
+    private lateinit var navController: androidx.navigation.NavController
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Apply saved theme BEFORE super.onCreate
+        // Apply theme
         ThemeManager.applyTheme(ThemeManager.getThemeMode(this))
 
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
 
-        // Setup Navigation
-        val navHostFragment = supportFragmentManager
-            .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-        val navController = navHostFragment.navController
-
-        // Hide action bar (we use toolbar in fragments)
-        supportActionBar?.hide()
+        // Use Compose instead of XML
+        setContent {
+            MyHabitTheme {
+                MainScreen()
+            }
+        }
 
         // Create notification channel
         NotificationHelper.createNotificationChannel(this)
 
         // Request notification permission for Android 13+
         requestNotificationPermission()
-
-        // Check exact alarm permission for Android 12+
-        checkExactAlarmPermission()
-
-        // Schedule weekly predictions
-        WorkManagerHelper.scheduleWeeklyPredictions(this)
     }
 
     override fun onResume() {
         super.onResume()
         checkExactAlarmPermission()
+    }
+
+    private fun setupBottomNavigation() {
+        // Initialize views
+        navHome = findViewById(R.id.navHome)
+        navStats = findViewById(R.id.navStats)
+        navProfile = findViewById(R.id.navProfile)
+
+        iconHome = findViewById(R.id.iconHome)
+        iconStats = findViewById(R.id.iconStats)
+        iconProfile = findViewById(R.id.iconProfile)
+
+        // Set initial active state
+        setActiveNavItem(navHome, iconHome)
+
+        // Click listeners
+        navHome.setOnClickListener {
+            navigateToHome()
+        }
+
+        navStats.setOnClickListener {
+            navigateToStats()
+        }
+
+        navProfile.setOnClickListener {
+            navigateToProfile()
+        }
+
+        // Listen to navigation changes
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            when (destination.id) {
+                R.id.habitsListFragment -> setActiveNavItem(navHome, iconHome)
+                R.id.insightsFragment -> setActiveNavItem(navStats, iconStats)
+                R.id.settingsFragment -> setActiveNavItem(navProfile, iconProfile)
+            }
+        }
+    }
+
+    private fun navigateToHome() {
+        if (navController.currentDestination?.id != R.id.habitsListFragment) {
+            navController.navigate(R.id.habitsListFragment)
+        }
+        setActiveNavItem(navHome, iconHome)
+    }
+
+    private fun navigateToStats() {
+        if (navController.currentDestination?.id != R.id.insightsFragment) {
+            // Check if insights fragment exists in nav graph
+            try {
+                navController.navigate(R.id.insightsFragment)
+            } catch (e: Exception) {
+                // If insights fragment doesn't exist yet, show message
+                Toast.makeText(this, "Insights screen coming soon!", Toast.LENGTH_SHORT).show()
+            }
+        }
+        setActiveNavItem(navStats, iconStats)
+    }
+
+    private fun navigateToProfile() {
+        if (navController.currentDestination?.id != R.id.settingsFragment) {
+            navController.navigate(R.id.settingsFragment)
+        }
+        setActiveNavItem(navProfile, iconProfile)
+    }
+
+    private fun setActiveNavItem(activeLayout: LinearLayout, activeIcon: TextView) {
+        // Reset all
+        resetNavItem(navHome, iconHome)
+        resetNavItem(navStats, iconStats)
+        resetNavItem(navProfile, iconProfile)
+
+        // Set active
+        activeLayout.setBackgroundResource(R.drawable.bg_nav_active)
+        activeIcon.alpha = 1.0f
+
+        // Scale animation
+        activeIcon.animate()
+            .scaleX(1.1f)
+            .scaleY(1.1f)
+            .setDuration(200)
+            .start()
+    }
+
+    private fun resetNavItem(layout: LinearLayout, icon: TextView) {
+        layout.background = null
+        icon.alpha = 0.5f
+        icon.animate()
+            .scaleX(1.0f)
+            .scaleY(1.0f)
+            .setDuration(200)
+            .start()
     }
 
     private fun checkBatteryOptimization() {
@@ -120,7 +219,7 @@ class MainActivity : AppCompatActivity() {
                 ).show()
 
                 // Open settings
-                val intent = Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
                 startActivity(intent)
             }
         }

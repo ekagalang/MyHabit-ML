@@ -217,13 +217,16 @@
                     android:textStyle="bold"
                     android:textColor="@color/md_theme_onSurface" />
 
-                <com.prolificinteractive.materialcalendarview.MaterialCalendarView
-                    android:id="@+id/calendarView"
+                <TextView
+                    android:id="@+id/textViewCalendarPlaceholder"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    app:mcv_selectionColor="@color/md_theme_primary"
-                    app:mcv_showOtherDates="all" />
+                    android:padding="32dp"
+                    android:text="Calendar view (coming soon in Compose)"
+                    android:textAlignment="center"
+                    android:textColor="@color/md_theme_onSurface"
+                    android:alpha="0.5" />
 
             </LinearLayout>
 
