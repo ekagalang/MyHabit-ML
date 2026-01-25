@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base Dark Theme -->
+    <style name="Base.Theme.MyHabit" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- Primary Colors -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/text_on_primary</item>
+        <item name="colorPrimaryContainer">@color/primary_dark</item>
+
+        <!-- Background -->
+        <item name="android:colorBackground">@color/background_light</item>
+        <item name="colorOnBackground">@color/text_main</item>
+
+        <!-- Surface -->
+        <item name="colorSurface">@color/surface_light</item>
+        <item name="colorOnSurface">@color/text_main</item>
+
+        <!-- Status Bar -->
+        <item name="android:statusBarColor">@color/background_light</item>
+        <item name="android:windowLightStatusBar">false</item>
+
+        <!-- Navigation Bar -->
+        <item name="android:navigationBarColor">@color/background_light</item>
+        <item name="android:windowLightNavigationBar">false</item>
+
+        <!-- Shapes -->
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.MyHabit.SmallComponent</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.MyHabit.MediumComponent</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.MyHabit.LargeComponent</item>
+
+        <!-- Typography -->
+        <item name="textAppearanceHeadline1">@style/TextAppearance.MyHabit.Headline1.Dark</item>
+        <item name="textAppearanceHeadline2">@style/TextAppearance.MyHabit.Headline2.Dark</item>
+        <item name="textAppearanceBody1">@style/TextAppearance.MyHabit.Body1.Dark</item>
+        <item name="textAppearanceBody2">@style/TextAppearance.MyHabit.Body2.Dark</item>
+    </style>
+
+    <!-- Typography Styles - Dark -->
+    <style name="TextAppearance.MyHabit.Headline1.Dark" parent="TextAppearance.MyHabit.Headline1">
+        <item name="android:textColor">@color/text_main</item>
+    </style>
+
+    <style name="TextAppearance.MyHabit.Headline2.Dark" parent="TextAppearance.MyHabit.Headline2">
+        <item name="android:textColor">@color/text_main</item>
+    </style>
+
+    <style name="TextAppearance.MyHabit.Body1.Dark" parent="TextAppearance.MyHabit.Body1">
+        <item name="android:textColor">@color/text_main</item>
+    </style>
+
+    <style name="TextAppearance.MyHabit.Body2.Dark" parent="TextAppearance.MyHabit.Body2">
+        <item name="android:textColor">@color/text_muted</item>
+    </style>
+</resources>

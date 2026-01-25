@@ -10,6 +10,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.navigation.fragment.NavHostFragment
 import com.habittracker.ml.utils.NotificationHelper
+import android.app.AlarmManager
+import android.os.PowerManager
+import android.net.Uri
+import android.provider.Settings
+import android.content.Context
+import android.content.Intent
+import com.habittracker.ml.utils.WorkManagerHelper
+import com.habittracker.ml.utils.ThemeManager
 
 class MainActivity : AppCompatActivity() {
 
@@ -24,6 +32,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Apply saved theme BEFORE super.onCreate
+        ThemeManager.applyTheme(ThemeManager.getThemeMode(this))
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
@@ -40,6 +51,36 @@ class MainActivity : AppCompatActivity() {
 
         // Request notification permission for Android 13+
         requestNotificationPermission()
+
+        // Check exact alarm permission for Android 12+
+        checkExactAlarmPermission()
+
+        // Schedule weekly predictions
+        WorkManagerHelper.scheduleWeeklyPredictions(this)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        checkExactAlarmPermission()
+    }
+
+    private fun checkBatteryOptimization() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
+                com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                    .setTitle("Battery Optimization")
+                    .setMessage("To ensure reminders work correctly on this device, please allow the app to run in the background.")
+                    .setPositiveButton("Allow") { _, _ ->
+                        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                            data = Uri.parse("package:$packageName")
+                        }
+                        startActivity(intent)
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+        }
     }
 
     private fun requestNotificationPermission() {
@@ -64,6 +105,23 @@ class MainActivity : AppCompatActivity() {
                     // Request permission
                     requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
+            }
+        }
+    }
+
+    private fun checkExactAlarmPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            if (!alarmManager.canScheduleExactAlarms()) {
+                Toast.makeText(
+                    this,
+                    "Please enable exact alarms in settings",
+                    Toast.LENGTH_LONG
+                ).show()
+
+                // Open settings
+                val intent = Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                startActivity(intent)
             }
         }
     }

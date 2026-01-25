@@ -4,7 +4,9 @@
       "Bash(export JAVA_HOME=\"C:\\\\Program Files\\\\Android\\\\Android Studio\\\\jbr\")",
       "Bash(./gradlew clean build:*)",
       "Bash(./gradlew :app:dependencies:*)",
-      "Bash(./gradlew build:*)"
+      "Bash(./gradlew build:*)",
+      "Bash(adb logcat:*)",
+      "Bash(./gradlew assembleDebug:*)"
     ]
   }
 }

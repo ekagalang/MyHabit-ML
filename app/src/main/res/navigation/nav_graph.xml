@@ -23,6 +23,11 @@
             app:destination="@id/settingsFragment"
             app:enterAnim="@android:anim/slide_in_left"
             app:exitAnim="@android:anim/slide_out_right" />
+        <action
+            android:id="@+id/action_habitsList_to_insights"
+            app:destination="@id/insightsFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right" />
     </fragment>
 
     <fragment
@@ -42,11 +47,21 @@
         <argument
             android:name="habitId"
             app:argType="long" />
+        <action
+            android:id="@+id/action_habitDetail_to_addEditHabit"
+            app:destination="@id/addEditHabitFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right" />
     </fragment>
 
     <fragment
         android:id="@+id/settingsFragment"
         android:name="com.habittracker.ml.ui.settings.SettingsFragment"
         android:label="Settings" />
+
+    <fragment
+        android:id="@+id/insightsFragment"
+        android:name="com.habittracker.ml.ui.insights.InsightsFragment"
+        android:label="Future Self Insights" />
 
 </navigation>

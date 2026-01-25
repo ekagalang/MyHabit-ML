@@ -11,7 +11,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import androidx.navigation.fragment.navArgs
+import kotlinx.coroutines.launch
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.slider.Slider
@@ -29,6 +32,7 @@ import java.util.*
 
 class AddEditHabitFragment : Fragment() {
 
+    private val args: AddEditHabitFragmentArgs by navArgs()
     private lateinit var viewModel: HabitsViewModel
     private lateinit var toolbar: MaterialToolbar
     private lateinit var editTextName: TextInputEditText
@@ -43,6 +47,8 @@ class AddEditHabitFragment : Fragment() {
 
     private lateinit var appPreferences: AppPreferences
     private var selectedReminderTime: String = "08:00"
+    private var isEditMode: Boolean = false
+    private var existingHabit: Habit? = null
 
     private val categories = listOf(
         "Health",
@@ -103,6 +109,21 @@ class AddEditHabitFragment : Fragment() {
 
         // Create notification channel
         NotificationHelper.createNotificationChannel(requireContext())
+
+        // Check if edit mode
+        isEditMode = args.habitId != -1L
+        if (isEditMode) {
+            toolbar.title = "Edit Habit"
+            buttonSave.text = "Update Habit"
+            loadHabitData()
+        } else {
+            // For new habit, enable reminder by default if notifications are enabled
+            if (appPreferences.notificationsEnabled) {
+                switchReminder.isChecked = true
+                textViewReminderTimeLabel.visibility = View.VISIBLE
+                buttonPickTime.visibility = View.VISIBLE
+            }
+        }
 
         // Setup toolbar
         toolbar.setNavigationOnClickListener {
@@ -179,6 +200,39 @@ class AddEditHabitFragment : Fragment() {
         buttonPickTime.text = timeFormat.format(calendar.time)
     }
 
+    private fun loadHabitData() {
+        lifecycleScope.launch {
+            val database = HabitDatabase.getDatabase(requireContext())
+            val habit = database.habitDao().getHabitById(args.habitId)
+
+            habit?.let {
+                existingHabit = it
+
+                // Populate fields
+                editTextName.setText(it.name)
+                editTextDescription.setText(it.description)
+
+                // Set category
+                val categoryIndex = categories.indexOf(it.category.replaceFirstChar { char ->
+                    if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else char.toString()
+                })
+                if (categoryIndex >= 0) {
+                    spinnerCategory.setSelection(categoryIndex)
+                }
+
+                // Set frequency
+                sliderFrequency.value = it.targetFrequency.toFloat()
+
+                // Set reminder
+                switchReminder.isChecked = it.reminderEnabled
+                if (it.reminderTime != null) {
+                    selectedReminderTime = it.reminderTime
+                    updateTimeButtonText(selectedReminderTime)
+                }
+            }
+        }
+    }
+
     private fun saveHabit() {
         val name = editTextName.text.toString().trim()
         val description = editTextDescription.text.toString().trim()
@@ -197,22 +251,40 @@ class AddEditHabitFragment : Fragment() {
             return
         }
 
-        // Create habit
-        val habit = Habit(
-            name = name,
-            description = description,
-            category = category.lowercase(),
-            targetFrequency = frequency,
-            reminderEnabled = reminderEnabled,
-            reminderTime = if (reminderEnabled) selectedReminderTime else null,
-            icon = categoryIcons[category] ?: "🎯",
-            color = categoryColors[category] ?: "#6366F1"
-        )
+        if (isEditMode && existingHabit != null) {
+            // Update existing habit
+            val updatedHabit = existingHabit!!.copy(
+                name = name,
+                description = description,
+                category = category.lowercase(),
+                targetFrequency = frequency,
+                reminderEnabled = reminderEnabled,
+                reminderTime = if (reminderEnabled) selectedReminderTime else null,
+                icon = categoryIcons[category] ?: existingHabit!!.icon,
+                color = categoryColors[category] ?: existingHabit!!.color
+            )
 
-        // Save to database with callback
-        viewModel.insertHabit(habit) { habitId ->
-            Toast.makeText(requireContext(), "Habit created! 🎉", Toast.LENGTH_SHORT).show()
+            viewModel.updateHabit(updatedHabit)
+            Toast.makeText(requireContext(), "Habit updated! ✅", Toast.LENGTH_SHORT).show()
             findNavController().navigateUp()
+        } else {
+            // Create new habit
+            val habit = Habit(
+                name = name,
+                description = description,
+                category = category.lowercase(),
+                targetFrequency = frequency,
+                reminderEnabled = reminderEnabled,
+                reminderTime = if (reminderEnabled) selectedReminderTime else null,
+                icon = categoryIcons[category] ?: "🎯",
+                color = categoryColors[category] ?: "#6366F1"
+            )
+
+            // Save to database with callback
+            viewModel.insertHabit(habit) { habitId ->
+                Toast.makeText(requireContext(), "Habit created! 🎉", Toast.LENGTH_SHORT).show()
+                findNavController().navigateUp()
+            }
         }
     }
 }

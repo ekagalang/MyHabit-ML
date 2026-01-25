@@ -1,33 +1,77 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Material 3 Colors - Light Theme -->
-    <color name="md_theme_primary">#6366F1</color>
-    <color name="md_theme_onPrimary">#FFFFFF</color>
-    <color name="md_theme_primaryContainer">#E0E7FF</color>
-    <color name="md_theme_onPrimaryContainer">#1E1B4B</color>
+    <!-- Primary Colors - New Design System -->
+    <color name="primary">#2ED1A2</color>
+    <color name="primary_dark">#24B890</color>
+    <color name="primary_light">#5EDDB5</color>
+    <color name="highlight">#703EFF</color>
 
+    <!-- Background Colors -->
+    <color name="background_light">#F8FAFD</color>
+    <color name="background_dark">#121212</color>
+
+    <!-- Surface Colors -->
+    <color name="surface_light">#FFFFFF</color>
+    <color name="surface_dark">#1E1E1E</color>
+    <color name="surface_variant_light">#F5F5F5</color>
+    <color name="surface_variant_dark">#2C3038</color>
+
+    <!-- Text Colors -->
+    <color name="text_main">#1A1C1E</color>
+    <color name="text_muted">#73777F</color>
+    <color name="text_on_primary">#FFFFFF</color>
+    <color name="text_dark">#FFFFFF</color>
+    <color name="text_dark_muted">#B0B0B0</color>
+
+    <!-- Accent Colors -->
+    <color name="accent_success">#10B981</color>
+    <color name="accent_warning">#F59E0B</color>
+    <color name="accent_error">#EF4444</color>
+    <color name="accent_info">#3B82F6</color>
+
+    <!-- Category Colors -->
+    <color name="category_health">#10B981</color>
+    <color name="category_productivity">#6366F1</color>
+    <color name="category_learning">#F59E0B</color>
+    <color name="category_mindfulness">#8B5CF6</color>
+    <color name="category_social">#EC4899</color>
+
+    <!-- Gradient Colors -->
+    <color name="gradient_start">#2ED1A2</color>
+    <color name="gradient_end">#24B890</color>
+
+    <!-- Border Colors -->
+    <color name="border_light">#E5E7EB</color>
+    <color name="border_dark">#374151</color>
+
+    <!-- Overlay Colors -->
+    <color name="overlay_light">#80FFFFFF</color>
+    <color name="overlay_dark">#80000000</color>
+
+    <!-- Legacy Support (for backward compatibility) -->
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="transparent">#00000000</color>
+
+    <!-- Old theme colors (kept for backward compatibility) -->
+    <color name="md_theme_primary">#2ED1A2</color>
+    <color name="md_theme_onPrimary">#FFFFFF</color>
+    <color name="md_theme_primaryContainer">#D1FAE5</color>
+    <color name="md_theme_onPrimaryContainer">#064E3B</color>
     <color name="md_theme_secondary">#10B981</color>
     <color name="md_theme_onSecondary">#FFFFFF</color>
     <color name="md_theme_secondaryContainer">#D1FAE5</color>
     <color name="md_theme_onSecondaryContainer">#064E3B</color>
-
     <color name="md_theme_tertiary">#F59E0B</color>
     <color name="md_theme_onTertiary">#FFFFFF</color>
     <color name="md_theme_tertiaryContainer">#FEF3C7</color>
     <color name="md_theme_onTertiaryContainer">#78350F</color>
-
     <color name="md_theme_error">#EF4444</color>
     <color name="md_theme_onError">#FFFFFF</color>
     <color name="md_theme_errorContainer">#FEE2E2</color>
     <color name="md_theme_onErrorContainer">#7F1D1D</color>
-
-    <color name="md_theme_background">#FFFFFF</color>
-    <color name="md_theme_onBackground">#1F2937</color>
-
+    <color name="md_theme_background">#F8FAFD</color>
+    <color name="md_theme_onBackground">#1A1C1E</color>
     <color name="md_theme_surface">#FFFFFF</color>
-    <color name="md_theme_onSurface">#1F2937</color>
-
-    <!-- Additional Colors -->
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="md_theme_onSurface">#1A1C1E</color>
 </resources>

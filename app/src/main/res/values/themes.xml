@@ -1,27 +1,78 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Base.Theme.MyHabit" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/md_theme_primary</item>
-        <item name="colorOnPrimary">@color/md_theme_onPrimary</item>
-        <item name="colorPrimaryContainer">@color/md_theme_primaryContainer</item>
-        <item name="colorOnPrimaryContainer">@color/md_theme_onPrimaryContainer</item>
-        <item name="colorSecondary">@color/md_theme_secondary</item>
-        <item name="colorOnSecondary">@color/md_theme_onSecondary</item>
-        <item name="colorSecondaryContainer">@color/md_theme_secondaryContainer</item>
-        <item name="colorOnSecondaryContainer">@color/md_theme_onSecondaryContainer</item>
-        <item name="colorTertiary">@color/md_theme_tertiary</item>
-        <item name="colorOnTertiary">@color/md_theme_onTertiary</item>
-        <item name="colorTertiaryContainer">@color/md_theme_tertiaryContainer</item>
-        <item name="colorOnTertiaryContainer">@color/md_theme_onTertiaryContainer</item>
-        <item name="colorError">@color/md_theme_error</item>
-        <item name="colorOnError">@color/md_theme_onError</item>
-        <item name="colorErrorContainer">@color/md_theme_errorContainer</item>
-        <item name="colorOnErrorContainer">@color/md_theme_onErrorContainer</item>
-        <item name="android:colorBackground">@color/md_theme_background</item>
-        <item name="colorOnBackground">@color/md_theme_onBackground</item>
-        <item name="colorSurface">@color/md_theme_surface</item>
-        <item name="colorOnSurface">@color/md_theme_onSurface</item>
+    <!-- Base Light Theme -->
+    <style name="Base.Theme.MyHabit" parent="Theme.Material3.Light.NoActionBar">
+        <!-- Primary Colors -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/text_on_primary</item>
+        <item name="colorPrimaryContainer">@color/primary_light</item>
+
+        <!-- Background -->
+        <item name="android:colorBackground">@color/background_light</item>
+        <item name="colorOnBackground">@color/text_main</item>
+
+        <!-- Surface -->
+        <item name="colorSurface">@color/surface_light</item>
+        <item name="colorOnSurface">@color/text_main</item>
+
+        <!-- Status Bar -->
+        <item name="android:statusBarColor">@color/background_light</item>
+        <item name="android:windowLightStatusBar">true</item>
+
+        <!-- Navigation Bar -->
+        <item name="android:navigationBarColor">@color/background_light</item>
+        <item name="android:windowLightNavigationBar">true</item>
+
+        <!-- Shapes -->
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.MyHabit.SmallComponent</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.MyHabit.MediumComponent</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.MyHabit.LargeComponent</item>
+
+        <!-- Typography -->
+        <item name="textAppearanceHeadline1">@style/TextAppearance.MyHabit.Headline1</item>
+        <item name="textAppearanceHeadline2">@style/TextAppearance.MyHabit.Headline2</item>
+        <item name="textAppearanceBody1">@style/TextAppearance.MyHabit.Body1</item>
+        <item name="textAppearanceBody2">@style/TextAppearance.MyHabit.Body2</item>
     </style>
 
     <style name="Theme.MyHabit" parent="Base.Theme.MyHabit" />
+
+    <!-- Shape Appearances -->
+    <style name="ShapeAppearance.MyHabit.SmallComponent" parent="ShapeAppearance.Material3.SmallComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">12dp</item>
+    </style>
+
+    <style name="ShapeAppearance.MyHabit.MediumComponent" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+
+    <style name="ShapeAppearance.MyHabit.LargeComponent" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">28dp</item>
+    </style>
+
+    <!-- Typography Styles -->
+    <style name="TextAppearance.MyHabit.Headline1" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="android:textSize">32sp</item>
+        <item name="android:textColor">@color/text_main</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="TextAppearance.MyHabit.Headline2" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:textSize">24sp</item>
+        <item name="android:textColor">@color/text_main</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="TextAppearance.MyHabit.Body1" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@color/text_main</item>
+    </style>
+
+    <style name="TextAppearance.MyHabit.Body2" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/text_muted</item>
+    </style>
 </resources>

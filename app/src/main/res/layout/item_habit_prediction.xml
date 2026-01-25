@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/textViewHabitName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/md_theme_onSurface"
+                tools:text="Morning Run" />
+
+            <TextView
+                android:id="@+id/textViewTrend"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="4dp"
+                android:text="📈 Improving"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/md_theme_secondary"
+                android:background="@drawable/trend_badge"
+                tools:text="📈 Improving" />
+
+        </LinearLayout>
+
+        <!-- Prediction Text -->
+        <TextView
+            android:id="@+id/textViewPrediction"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textSize="14sp"
+            android:textColor="@color/md_theme_onSurface"
+            tools:text="You'll master this habit! 🔥" />
+
+        <!-- Progress Bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ProgressBar
+                android:id="@+id/progressCompletion"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="0dp"
+                android:layout_height="8dp"
+                android:layout_weight="1"
+                android:max="100"
+                android:progress="75"
+                android:progressTint="@color/md_theme_primary"
+                android:progressBackgroundTint="#E0E0E0" />
+
+            <TextView
+                android:id="@+id/textViewCompletionRate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/md_theme_primary"
+                tools:text="75%" />
+
+        </LinearLayout>
+
+        <!-- Projected Streak -->
+        <TextView
+            android:id="@+id/textViewProjectedStreak"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textSize="12sp"
+            android:textColor="@color/md_theme_onSurface"
+            android:alpha="0.7"
+            tools:text="🔥 Projected 30-day streak: 22 days" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

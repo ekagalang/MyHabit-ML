@@ -19,6 +19,8 @@ import com.habittracker.ml.data.local.entities.HabitWithCheckIns
 import com.habittracker.ml.data.repository.HabitRepository
 import com.habittracker.ml.utils.StreakCalculator
 import kotlinx.coroutines.launch
+import com.habittracker.ml.utils.NotificationHelper
+import com.habittracker.ml.utils.WorkManagerHelper
 
 class HabitsListFragment : Fragment() {
 
@@ -47,6 +49,7 @@ class HabitsListFragment : Fragment() {
         fabAddHabit = view.findViewById(R.id.fabAddHabit)
 
         val buttonSettings = view.findViewById<android.widget.ImageButton>(R.id.buttonSettings)
+        val buttonInsights = view.findViewById<android.widget.ImageButton>(R.id.buttonInsights)
 
         // Setup ViewModel
         val database = HabitDatabase.getDatabase(requireContext())
@@ -96,6 +99,36 @@ class HabitsListFragment : Fragment() {
         // Settings button click listener
         buttonSettings.setOnClickListener {
             findNavController().navigate(R.id.settingsFragment)
+        }
+
+        // TEST NOTIFICATION BUTTON
+        view.findViewById<com.google.android.material.button.MaterialButton>(R.id.buttonTestNotification)
+            ?.setOnClickListener {
+                android.util.Log.d("HabitsListFragment", "🔘 Test button clicked")
+                NotificationHelper.sendHabitReminder(
+                    requireContext(),
+                    1L,
+                    "Test Habit",
+                    "🎯"
+                )
+                Toast.makeText(requireContext(), "Notification sent!", Toast.LENGTH_SHORT).show()
+            }
+
+        // TEST PREDICTION BUTTON
+        view.findViewById<com.google.android.material.button.MaterialButton>(R.id.buttonTestPrediction)
+            ?.setOnClickListener {
+                android.util.Log.d("HabitsListFragment", "🤖 Generating predictions...")
+                WorkManagerHelper.scheduleImmediatePrediction(requireContext())
+                Toast.makeText(
+                    requireContext(),
+                    "Generating insights... Check logcat!",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+
+        // Insights button click listener
+        buttonInsights.setOnClickListener {
+            findNavController().navigate(R.id.action_habitsList_to_insights)
         }
     }
 

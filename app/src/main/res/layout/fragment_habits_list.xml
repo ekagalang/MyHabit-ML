@@ -17,6 +17,18 @@
         app:title="My Habits"
         app:titleTextColor="@color/md_theme_onSurface">
 
+        <!-- Insights Button -->
+        <ImageButton
+            android:id="@+id/buttonInsights"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="end"
+            android:layout_marginEnd="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Insights"
+            android:src="@android:drawable/ic_menu_sort_by_size"
+            android:padding="12dp" />
+
         <!-- Settings Menu -->
         <ImageButton
             android:id="@+id/buttonSettings"
@@ -64,6 +76,30 @@
         app:tint="@color/md_theme_onPrimary"
         app:backgroundTint="@color/md_theme_primary"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Test Notification Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonTestNotification"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="Test Notification"
+        android:textSize="12sp"
+        style="@style/Widget.Material3.Button.TonalButton"
+        app:layout_constraintBottom_toTopOf="@id/fabAddHabit"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Test Prediction Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonTestPrediction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="Generate Insights"
+        android:textSize="12sp"
+        style="@style/Widget.Material3.Button.TonalButton"
+        app:layout_constraintBottom_toTopOf="@id/buttonTestNotification"
         app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

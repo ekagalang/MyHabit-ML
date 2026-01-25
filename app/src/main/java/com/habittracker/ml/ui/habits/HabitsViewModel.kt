@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.habittracker.ml.data.local.entities.CheckIn
 import com.habittracker.ml.data.local.entities.Habit
+import com.habittracker.ml.data.local.preferences.AppPreferences
 import com.habittracker.ml.data.repository.HabitRepository
 import com.habittracker.ml.utils.DateUtils
 import com.habittracker.ml.utils.HabitReminderScheduler
@@ -22,11 +23,16 @@ class HabitsViewModel(
         viewModelScope.launch {
             val habitId = repository.insertHabit(habit)
 
-            // Schedule reminder if enabled
-            if (habit.reminderEnabled && habit.reminderTime != null && context != null) {
-                val habitWithId = habit.copy(id = habitId)
-                val scheduler = HabitReminderScheduler(context)
-                scheduler.scheduleReminder(habitWithId)
+            // Schedule reminder if enabled and notifications are on
+            if (context != null) {
+                val appPreferences = AppPreferences(context)
+                if (appPreferences.notificationsEnabled &&
+                    habit.reminderEnabled &&
+                    habit.reminderTime != null) {
+                    val habitWithId = habit.copy(id = habitId)
+                    val scheduler = HabitReminderScheduler(context)
+                    scheduler.scheduleReminder(habitWithId)
+                }
             }
 
             onComplete?.invoke(habitId)
@@ -39,8 +45,12 @@ class HabitsViewModel(
 
             // Reschedule reminder
             if (context != null) {
+                val appPreferences = AppPreferences(context)
                 val scheduler = HabitReminderScheduler(context)
-                if (habit.reminderEnabled && habit.reminderTime != null) {
+
+                if (appPreferences.notificationsEnabled &&
+                    habit.reminderEnabled &&
+                    habit.reminderTime != null) {
                     scheduler.scheduleReminder(habit)
                 } else {
                     scheduler.cancelReminder(habit.id)

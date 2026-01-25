@@ -2,6 +2,7 @@ package com.habittracker.ml.data.local.preferences
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.habittracker.ml.utils.ThemeManager
 
 class AppPreferences(context: Context) {
 
@@ -37,4 +38,8 @@ class AppPreferences(context: Context) {
     var isFirstLaunch: Boolean
         get() = prefs.getBoolean(KEY_FIRST_LAUNCH, true)
         set(value) = prefs.edit().putBoolean(KEY_FIRST_LAUNCH, value).apply()
+
+    var themeMode: Int
+        get() = prefs.getInt("theme_mode", ThemeManager.MODE_SYSTEM)
+        set(value) = prefs.edit().putInt("theme_mode", value).apply()
 }

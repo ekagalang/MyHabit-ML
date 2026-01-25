@@ -8,13 +8,20 @@ import android.os.Build
 import com.habittracker.ml.data.local.entities.Habit
 import com.habittracker.ml.receivers.HabitReminderReceiver
 import java.util.*
+import android.util.Log
 
 class HabitReminderScheduler(private val context: Context) {
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     fun scheduleReminder(habit: Habit) {
-        if (!habit.reminderEnabled || habit.reminderTime == null) return
+        if (!habit.reminderEnabled || habit.reminderTime == null) {
+            Log.d("ReminderScheduler", "❌ Reminder not enabled for: ${habit.name}")
+            return
+        }
+
+        Log.d("ReminderScheduler", "📅 Scheduling reminder for: ${habit.name}")
+        Log.d("ReminderScheduler", "⏰ Time: ${habit.reminderTime}")
 
         val intent = Intent(context, HabitReminderReceiver::class.java).apply {
             putExtra("HABIT_ID", habit.id)
@@ -30,20 +37,66 @@ class HabitReminderScheduler(private val context: Context) {
         )
 
         val triggerTime = calculateTriggerTime(habit.reminderTime)
+        val currentTime = System.currentTimeMillis()
+        val delayMinutes = (triggerTime - currentTime) / 1000 / 60
 
-        // Schedule repeating alarm
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                triggerTime,
-                pendingIntent
-            )
-        } else {
-            alarmManager.setExact(
-                AlarmManager.RTC_WAKEUP,
-                triggerTime,
-                pendingIntent
-            )
+        Log.d("ReminderScheduler", "⏳ Will trigger in: $delayMinutes minutes")
+        Log.d("ReminderScheduler", "🕐 Trigger at: ${java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(triggerTime))}")
+
+        // Schedule alarm - using setAlarmClock for highest priority and accuracy
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    // Use setAlarmClock for maximum accuracy and priority
+                    // This shows in status bar and won't be delayed by battery optimization
+                    val alarmClockInfo = AlarmManager.AlarmClockInfo(
+                        triggerTime,
+                        pendingIntent
+                    )
+                    alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+                    Log.d("ReminderScheduler", "✅ AlarmClock scheduled (API 31+) - Highest priority")
+                } else {
+                    Log.w("ReminderScheduler", "⚠️ Exact alarm permission missing, falling back")
+                    alarmManager.setAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerTime,
+                        pendingIntent
+                    )
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                // Use setAlarmClock for API 21+ for best accuracy
+                val alarmClockInfo = AlarmManager.AlarmClockInfo(
+                    triggerTime,
+                    pendingIntent
+                )
+                alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+                Log.d("ReminderScheduler", "✅ AlarmClock scheduled (API 21+) - High priority")
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerTime,
+                    pendingIntent
+                )
+                Log.d("ReminderScheduler", "✅ Exact alarm scheduled (API 23+)")
+            } else {
+                alarmManager.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerTime,
+                    pendingIntent
+                )
+                Log.d("ReminderScheduler", "✅ Exact alarm scheduled")
+            }
+        } catch (e: SecurityException) {
+            Log.e("ReminderScheduler", "❌ SecurityException: Failed to schedule exact alarm", e)
+            // Fallback attempt
+            try {
+                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+                Log.d("ReminderScheduler", "✅ Fallback: Inexact alarm scheduled")
+            } catch (e2: Exception) {
+                Log.e("ReminderScheduler", "❌ Fatal: Could not schedule any alarm", e2)
+            }
+        } catch (e: Exception) {
+            Log.e("ReminderScheduler", "❌ Error scheduling alarm", e)
         }
     }
 

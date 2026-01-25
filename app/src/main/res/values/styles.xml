@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Card Styles -->
+    <style name="Widget.MyHabit.Card" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardCornerRadius">20dp</item>
+        <item name="cardElevation">2dp</item>
+        <item name="cardBackgroundColor">@color/surface_light</item>
+        <item name="contentPadding">20dp</item>
+    </style>
+
+    <style name="Widget.MyHabit.Card.Glassmorphism">
+        <item name="cardCornerRadius">28dp</item>
+        <item name="cardElevation">8dp</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">@color/border_light</item>
+    </style>
+
+    <!-- Button Styles -->
+    <style name="Widget.MyHabit.Button" parent="Widget.Material3.Button">
+        <item name="cornerRadius">16dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:paddingTop">14dp</item>
+        <item name="android:paddingBottom">14dp</item>
+        <item name="backgroundTint">@color/primary</item>
+    </style>
+
+    <style name="Widget.MyHabit.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="cornerRadius">16dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">16sp</item>
+        <item name="strokeColor">@color/primary</item>
+        <item name="strokeWidth">2dp</item>
+    </style>
+
+    <style name="Widget.MyHabit.Button.Text" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <!-- FAB Style -->
+    <style name="Widget.MyHabit.FloatingActionButton" parent="Widget.Material3.FloatingActionButton.Primary">
+        <item name="shapeAppearance">@style/ShapeAppearance.MyHabit.FAB</item>
+        <item name="backgroundTint">@color/primary</item>
+        <item name="tint">@color/white</item>
+        <item name="elevation">12dp</item>
+    </style>
+
+    <style name="ShapeAppearance.MyHabit.FAB" parent="ShapeAppearance.Material3.Corner.Full">
+        <item name="cornerSize">16dp</item>
+    </style>
+
+    <!-- Chip Style -->
+    <style name="Widget.MyHabit.Chip" parent="Widget.Material3.Chip.Suggestion">
+        <item name="chipCornerRadius">12dp</item>
+        <item name="chipBackgroundColor">@color/surface_variant_light</item>
+        <item name="android:textColor">@color/text_main</item>
+    </style>
+
+    <!-- Bottom Navigation Style -->
+    <style name="Widget.MyHabit.BottomNavigation" parent="">
+        <item name="android:background">@drawable/bg_bottom_nav</item>
+        <item name="android:elevation">16dp</item>
+    </style>
+
+    <!-- Text Input Style -->
+    <style name="Widget.MyHabit.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">12dp</item>
+        <item name="boxCornerRadiusTopEnd">12dp</item>
+        <item name="boxCornerRadiusBottomStart">12dp</item>
+        <item name="boxCornerRadiusBottomEnd">12dp</item>
+        <item name="boxStrokeColor">@color/primary</item>
+    </style>
+
+    <!-- Progress Bar Style -->
+    <style name="Widget.MyHabit.CircularProgressIndicator" parent="Widget.Material3.CircularProgressIndicator">
+        <item name="indicatorColor">@color/primary</item>
+        <item name="trackColor">@color/surface_variant_light</item>
+        <item name="trackThickness">8dp</item>
+    </style>
+
+</resources>

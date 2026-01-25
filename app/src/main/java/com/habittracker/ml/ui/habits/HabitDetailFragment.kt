@@ -86,8 +86,9 @@ class HabitDetailFragment : Fragment() {
 
         // Button listeners
         buttonEdit.setOnClickListener {
-            // TODO: Navigate to edit screen
-            Toast.makeText(requireContext(), "Edit feature coming soon", Toast.LENGTH_SHORT).show()
+            val action = HabitDetailFragmentDirections
+                .actionHabitDetailToAddEditHabit(args.habitId)
+            findNavController().navigate(action)
         }
 
         buttonDelete.setOnClickListener {
