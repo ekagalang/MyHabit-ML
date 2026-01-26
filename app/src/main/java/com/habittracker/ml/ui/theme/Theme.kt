@@ -64,12 +64,32 @@ fun MyHabitTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
+    // Update theme-aware colors used across screens
+    SideEffect {
+        if (darkTheme) {
+            BackgroundLight = BackgroundDark
+            SurfaceLight = SurfaceDark
+            SurfaceVariantLight = SurfaceVariantDark
+            TextMain = TextDark
+            TextMuted = TextDarkMuted
+            BorderLight = BorderDark
+        } else {
+            BackgroundLight = BackgroundLightDefault
+            SurfaceLight = SurfaceLightDefault
+            SurfaceVariantLight = SurfaceVariantLightDefault
+            TextMain = TextMainLight
+            TextMuted = TextMutedLight
+            BorderLight = BorderLightDefault
+        }
+    }
+
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     val view = LocalView.current
 
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
+            @Suppress("DEPRECATION")
             window.statusBarColor = colorScheme.background.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }

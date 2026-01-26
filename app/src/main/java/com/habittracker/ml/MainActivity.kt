@@ -55,7 +55,8 @@ class MainActivity : AppCompatActivity() {
 
         // Use Compose instead of XML
         setContent {
-            MyHabitTheme {
+            val isDark = ThemeManager.isDarkModeActive(this@MainActivity)
+            MyHabitTheme(darkTheme = isDark) {
                 MainScreen()
             }
         }

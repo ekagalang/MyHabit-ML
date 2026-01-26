@@ -16,6 +16,12 @@ interface CheckInDao {
     @Query("SELECT * FROM check_ins WHERE date = :date ORDER BY completedAt DESC")
     fun getCheckInsForDate(date: String): LiveData<List<CheckIn>>
 
+    @Query("SELECT * FROM check_ins WHERE date = :date ORDER BY completedAt DESC")
+    suspend fun getCheckInsForDateSync(date: String): List<CheckIn>
+
+    @Query("SELECT * FROM check_ins ORDER BY timestamp DESC")
+    suspend fun getAllCheckIns(): List<CheckIn>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCheckIn(checkIn: CheckIn): Long
 

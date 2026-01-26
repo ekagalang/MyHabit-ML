@@ -12,6 +12,9 @@ interface HabitDao {
     fun getAllActiveHabits(): LiveData<List<Habit>>
 
     @Query("SELECT * FROM habits WHERE isActive = 1 ORDER BY createdAt DESC")
+    suspend fun getAllActiveHabitsSync(): List<Habit>
+
+    @Query("SELECT * FROM habits WHERE isActive = 1 ORDER BY createdAt DESC")
     suspend fun getActiveHabits(): List<Habit>
 
     @Query("SELECT * FROM habits WHERE id = :habitId")

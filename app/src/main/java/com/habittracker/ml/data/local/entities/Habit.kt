@@ -16,6 +16,8 @@ data class Habit(
     val reminderTime: String? = null, // format: "HH:mm" (e.g., "08:00")
     val reminderEnabled: Boolean = false,
 
+    val repeatDays: String? = null, // CSV of DayOfWeek names, e.g. "MONDAY,WEDNESDAY"
+
     val color: String = "#6366F1", // hex color
     val icon: String = "🎯", // emoji icon
 

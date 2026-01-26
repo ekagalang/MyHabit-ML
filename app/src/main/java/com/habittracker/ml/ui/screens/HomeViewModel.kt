@@ -6,8 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.habittracker.ml.data.local.database.HabitDatabase
 import com.habittracker.ml.data.local.entities.CheckIn
 import com.habittracker.ml.data.local.entities.Habit
+import com.habittracker.ml.data.local.entities.HabitWithCheckIns
 import com.habittracker.ml.data.repository.HabitRepository
 import com.habittracker.ml.utils.DateUtils
+import com.habittracker.ml.utils.HabitReminderScheduler
 import com.habittracker.ml.utils.StreakCalculator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +28,7 @@ data class HomeUiState(
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: HabitRepository
+    private val context = application.applicationContext
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -37,20 +40,23 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         loadData()
     }
 
-    private fun loadData() {
+    fun loadData() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
 
-            // Get all habits
-            val habits = repository.getAllActiveHabits().value ?: emptyList()
+            // Get all active habits directly from database (suspend function)
+            val database = HabitDatabase.getDatabase(getApplication())
+            val habitDao = database.habitDao()
 
-            // Get today's check-ins
+            // Use suspend function to get fresh data
+            val habitsList = getAllActiveHabitsSync()
+
             val today = DateUtils.getCurrentDate()
-            val todayCheckIns = repository.getCheckInsForDate(today).value ?: emptyList()
+            val todayCheckIns = getTodayCheckInsSync(today)
 
-            // Calculate total streak (sum of all habit streaks)
+            // Calculate total streak
             var totalStreak = 0
-            habits.forEach { habit ->
+            habitsList.forEach { habit ->
                 val habitWithCheckIns = repository.getHabitWithCheckIns(habit.id)
                 if (habitWithCheckIns != null) {
                     totalStreak += StreakCalculator.calculateCurrentStreak(habitWithCheckIns.checkIns)
@@ -58,19 +64,41 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             _uiState.value = HomeUiState(
-                habits = habits,
+                habits = habitsList,
                 todayCheckIns = todayCheckIns,
                 totalStreak = totalStreak,
                 completedToday = todayCheckIns.size,
-                totalHabits = habits.size,
+                totalHabits = habitsList.size,
                 isLoading = false
             )
+
+            println("📊 HomeViewModel: Loaded ${habitsList.size} habits")
+        }
+    }
+
+    private suspend fun getAllActiveHabitsSync(): List<Habit> {
+        return try {
+            val database = HabitDatabase.getDatabase(getApplication())
+            // Direct database query
+            database.habitDao().getAllActiveHabitsSync()
+        } catch (e: Exception) {
+            println("❌ Error loading habits: ${e.message}")
+            emptyList()
+        }
+    }
+
+    private suspend fun getTodayCheckInsSync(date: String): List<CheckIn> {
+        return try {
+            val database = HabitDatabase.getDatabase(getApplication())
+            database.checkInDao().getCheckInsForDateSync(date)
+        } catch (e: Exception) {
+            println("❌ Error loading check-ins: ${e.message}")
+            emptyList()
         }
     }
 
     fun checkInHabit(habitId: Long) {
         viewModelScope.launch {
-            // Check if already checked in today
             val today = DateUtils.getCurrentDate()
             val existingCheckIn = repository.getCheckInForDate(habitId, today)
 
@@ -81,7 +109,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     completedAt = DateUtils.getCurrentTime()
                 )
                 repository.insertCheckIn(checkIn)
-                loadData() // Refresh data
+                val currentState = _uiState.value
+                if (currentState.todayCheckIns.none { it.habitId == habitId }) {
+                    val updatedToday = currentState.todayCheckIns + checkIn
+                    _uiState.value = currentState.copy(
+                        todayCheckIns = updatedToday,
+                        completedToday = updatedToday.size
+                    )
+                }
+                println("✅ Check-in created for habit $habitId")
+                loadData() // Refresh
+            } else {
+                println("⚠️ Already checked in today")
             }
         }
     }
@@ -90,7 +129,86 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         return _uiState.value.todayCheckIns.any { it.habitId == habitId }
     }
 
+    suspend fun getHabitWithCheckIns(habitId: Long): HabitWithCheckIns? {
+        return repository.getHabitWithCheckIns(habitId)
+    }
+
+    suspend fun getAllHabitsWithCheckIns(): List<HabitWithCheckIns> {
+        return repository.getAllHabitsWithCheckIns()
+    }
+
     fun refreshData() {
         loadData()
     }
+
+    fun insertHabit(habit: Habit, onComplete: (Long) -> Unit = {}) {
+        viewModelScope.launch {
+            val habitId = repository.insertHabit(habit)
+            println("✅ Habit inserted with ID: $habitId")
+
+            // Schedule reminder if enabled
+            if (habit.reminderEnabled && habit.reminderTime != null) {
+                val habitWithId = habit.copy(id = habitId)
+                val scheduler = HabitReminderScheduler(context)
+                scheduler.scheduleReminder(habitWithId)
+            }
+
+            // Refresh immediately
+            loadData()
+
+            onComplete(habitId)
+        }
+    }
+
+    fun updateHabit(habit: Habit, onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            repository.updateHabit(habit)
+            println("✅ Habit updated: ${habit.name}")
+
+            // Update reminder
+            val scheduler = HabitReminderScheduler(context)
+            if (habit.reminderEnabled && habit.reminderTime != null) {
+                scheduler.scheduleReminder(habit)
+            } else {
+                scheduler.cancelReminder(habit.id)
+            }
+
+            // Refresh immediately
+            loadData()
+
+            onComplete()
+        }
+    }
+
+    suspend fun getHabit(habitId: Long): Habit? {
+        return try {
+            val database = HabitDatabase.getDatabase(getApplication())
+            database.habitDao().getHabitById(habitId)
+        } catch (e: Exception) {
+            println("❌ Error loading habit: ${e.message}")
+            null
+        }
+    }
+
+    fun deleteHabit(habitId: Long) {
+        viewModelScope.launch {
+            try {
+                val database = HabitDatabase.getDatabase(getApplication())
+                database.habitDao().softDeleteHabit(habitId)
+
+                // Cancel reminder
+                val scheduler = HabitReminderScheduler(context)
+                scheduler.cancelReminder(habitId)
+
+                println("✅ Habit deleted: $habitId")
+
+                // Refresh immediately
+                loadData()
+            } catch (e: Exception) {
+                println("❌ Error deleting habit: ${e.message}")
+            }
+        }
+    }
 }
+
+

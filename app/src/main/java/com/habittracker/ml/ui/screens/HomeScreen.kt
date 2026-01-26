@@ -1,500 +1,750 @@
 package com.habittracker.ml.ui.screens
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.habittracker.ml.data.local.entities.Habit
-
-// --- DEFINISI WARNA (DITAMBAHKAN KEMBALI AGAR TIDAK ERROR) ---
-private val AppPrimary = Color(0xFF2ED1A2)
-private val AppPrimaryDark = Color(0xFF24b890)
-private val AppHighlight = Color(0xFF703EFF)
-private val AppBackgroundLight = Color(0xFFF8FAFD)
-private val AppSurfaceDark = Color(0xFF1E1E1E)
-private val AppTextMain = Color(0xFF1A1C1E)
-private val AppTextMuted = Color(0xFF73777F)
+import com.habittracker.ml.ui.theme.*
+import com.habittracker.ml.utils.StreakCalculator
+import java.text.SimpleDateFormat
+import java.util.*
+import kotlin.math.min
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun HomeScreen(
     onNavigateToAddHabit: () -> Unit = {},
+    onNavigateToEditHabit: (Long) -> Unit = {},
     onNavigateToHabitDetail: (Long) -> Unit = {},
+    onNavigateToWorkspace: () -> Unit = {},
+    onNavigateToMLInsights: () -> Unit = {},
     viewModel: HomeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Scaffold hanya untuk FAB. Navigasi bawah ada di MainScreen.
+    // Refresh every time screen is displayed
+    LaunchedEffect(key1 = true) {
+        viewModel.refreshData()
+    }
+
+    // Refresh when screen becomes visible
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.refreshData()
+        }
+    }
+
     Scaffold(
-        containerColor = AppBackgroundLight,
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToAddHabit,
-                containerColor = AppPrimary,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .size(56.dp)
-                    // Offset dikurangi karena navbar overlay
-                    .offset(y = (-80).dp)
-                    .shadow(elevation = 10.dp, spotColor = AppPrimary, shape = RoundedCornerShape(16.dp))
+        containerColor = BackgroundLight,
+        topBar = {
+            Surface(
+                color = BackgroundLight.copy(alpha = 0.96f),
+                shadowElevation = 2.dp
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Habit", modifier = Modifier.size(28.dp))
+                Column {
+                    DashboardHeader()
+                    HorizontalDivider(
+                        color = BorderLight.copy(alpha = 0.6f),
+                        thickness = 1.dp
+                    )
+                }
             }
         }
     ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(BackgroundLight)
+                .padding(paddingValues),
+            contentPadding = PaddingValues(bottom = 100.dp)
+        ) {
 
-        Box(modifier = Modifier.fillMaxSize()) {
+            // Date selector
+            item {
+                DateSelector()
+            }
 
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                // Padding bawah agar konten tidak tertutup Navbar di MainScreen
-                contentPadding = PaddingValues(bottom = 120.dp)
-            ) {
-                // 1. Header Section
-                item {
-                    TopHeaderSection()
+            // Progress Card (Glassmorphism)
+            item {
+                ProgressCard(
+                    completedToday = uiState.completedToday,
+                    totalHabits = uiState.totalHabits,
+                    totalStreak = uiState.totalStreak
+                )
+            }
+
+            // ML Insights Card
+            item {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .clickable { onNavigateToMLInsights() },
+                    shape = RoundedCornerShape(24.dp),
+                    color = Color(0xFF1E293B),
+                    shadowElevation = 4.dp
+                ) {
+                    Box {
+                        // Gradient circles
+                        Box(
+                            modifier = Modifier
+                                .size(120.dp)
+                                .offset(x = (-30).dp, y = (-30).dp)
+                                .background(
+                                    brush = Brush.radialGradient(
+                                        colors = listOf(
+                                            Primary.copy(alpha = 0.3f),
+                                            Color.Transparent
+                                        )
+                                    ),
+                                    shape = CircleShape
+                                )
+                        )
+
+                        Row(
+                            modifier = Modifier.padding(20.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = Highlight.copy(alpha = 0.2f),
+                                modifier = Modifier.size(56.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(text = "🤖", fontSize = 28.sp)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.width(16.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Primary.copy(alpha = 0.2f)
+                                ) {
+                                    Text(
+                                        text = "✨ AI POWERED",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Primary,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        letterSpacing = 1.sp
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Text(
+                                    text = "ML Insights",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = "View predictions & analysis",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.7f)
+                                )
+                            }
+
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = Color.White.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
                 }
+            }
 
-                // 2. Calendar Strip
-                item {
-                    CalendarStripSection()
-                }
+            item { Spacer(modifier = Modifier.height(20.dp)) }
 
-                // 3. Daily Progress Hero Card
-                item {
-                    DailyProgressCard(
-                        completedCount = uiState.completedToday,
-                        totalCount = uiState.totalHabits.takeIf { it > 0 } ?: 5
+            // My Habits Section
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "MY HABITS",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = TextMuted,
+                        letterSpacing = 1.2.sp
                     )
-                }
 
-                // 4. Section Title
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    TextButton(
+                        onClick = onNavigateToWorkspace,
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = "Today's Habits",
-                            fontSize = 20.sp,
+                            text = "View All",
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color = AppTextMain
+                            color = Primary
                         )
-                        Text(
-                            text = "Manage",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = AppPrimary,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { }
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = Primary,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
+            }
 
-                // 5. Habits List
-                if (uiState.habits.isEmpty()) {
-                    item {
-                        EmptyStateCompact(onAddHabit = onNavigateToAddHabit)
-                    }
-                } else {
-                    items(uiState.habits) { habit ->
-                        ModernHabitCard(
-                            habit = habit,
-                            isCheckedIn = viewModel.isHabitCheckedInToday(habit.id),
-                            onCheckIn = { viewModel.checkInHabit(habit.id) },
-                            onClick = { onNavigateToHabitDetail(habit.id) }
-                        )
-                    }
+            // Habits List
+            if (uiState.habits.isEmpty()) {
+                item {
+                    EmptyState(onAddHabit = onNavigateToAddHabit)
                 }
+            } else {
+                items(uiState.habits) { habit ->
+                    val habitWithCheckIns by produceState<com.habittracker.ml.data.local.entities.HabitWithCheckIns?>(
+                        initialValue = null,
+                        habit.id,
+                        uiState.todayCheckIns
+                    ) {
+                        value = viewModel.getHabitWithCheckIns(habit.id)
+                    }
+
+                    ModernHabitCard(
+                        habit = habit,
+                        streak = habitWithCheckIns?.let {
+                            StreakCalculator.calculateCurrentStreak(it.checkIns)
+                        } ?: 0,
+                        isCheckedIn = viewModel.isHabitCheckedInToday(habit.id),
+                        onCheckIn = { viewModel.checkInHabit(habit.id) },
+                        onEdit = { onNavigateToEditHabit(habit.id) },
+                        onClick = { onNavigateToHabitDetail(habit.id) }
+                    )
+                }
+            }
+
+            // Bottom spacer
+            item {
+                Spacer(modifier = Modifier.height(40.dp))
             }
         }
     }
 }
 
-// --- KOMPONEN UI ---
-
 @Composable
-fun TopHeaderSection() {
-    Row(
+fun DashboardHeader() {
+    val greeting = remember {
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        when (hour) {
+            in 0..11 -> "Good Morning"
+            in 12..16 -> "Good Afternoon"
+            else -> "Good Evening"
+        }
+    }
+
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 24.dp, start = 20.dp, end = 20.dp, bottom = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .background(BackgroundLight),
+        color = Color.Transparent
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(Color.Gray.copy(alpha = 0.2f))
-                    .border(2.dp, AppPrimary.copy(alpha = 0.2f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("A", fontWeight = FontWeight.Bold, color = AppTextMain)
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .background(AppPrimary, CircleShape)
-                        .border(2.dp, AppBackgroundLight, CircleShape)
-                        .align(Alignment.BottomEnd)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column {
-                Text(
-                    text = "Good Morning",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AppTextMuted,
-                    letterSpacing = 0.5.sp
-                )
-                Text(
-                    text = "Alex",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AppTextMain
-                )
-            }
-        }
-
-        Box(
+        Row(
             modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .clickable { }
-                .background(Color.Black.copy(alpha = 0.05f)),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.Notifications,
-                contentDescription = "Notifications",
-                tint = AppTextMain
-            )
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .background(AppHighlight, CircleShape)
-                    .border(1.dp, AppBackgroundLight, CircleShape)
-                    .align(Alignment.TopEnd)
-                    .offset(x = (-10).dp, y = 10.dp)
-            )
-        }
-    }
-}
-
-@Composable
-fun CalendarStripSection() {
-    val days = listOf("Mon" to "12", "Tue" to "13", "Wed" to "14", "Thu" to "15", "Fri" to "16", "Sat" to "17")
-    val selectedIndex = 2 // Wed 14
-
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.padding(bottom = 16.dp)
-    ) {
-        items(days.size) { index ->
-            val isSelected = index == selectedIndex
-            val (dayName, dateNum) = days[index]
-
-            Column(
-                modifier = Modifier
-                    .width(60.dp)
-                    .height(84.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(if (isSelected) AppPrimary else Color.White)
-                    .shadow(
-                        elevation = if (isSelected) 8.dp else 2.dp,
-                        shape = RoundedCornerShape(20.dp),
-                        spotColor = if (isSelected) AppPrimary.copy(alpha = 0.5f) else Color.Transparent
-                    )
-                    .clickable { },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+            // Profile + Greeting
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = dayName,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = if (isSelected) Color.White.copy(alpha = 0.9f) else AppTextMuted
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = dateNum,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isSelected) Color.White else AppTextMain
-                )
+                // Avatar with online indicator
+                Box {
+                    Surface(
+                        modifier = Modifier.size(48.dp),
+                        shape = CircleShape,
+                        color = Primary.copy(alpha = 0.2f),
+                        border = BorderStroke(2.dp, Primary.copy(alpha = 0.3f))
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "😊",
+                                fontSize = 24.sp
+                            )
+                        }
+                    }
 
-                if (isSelected) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Box(modifier = Modifier.size(6.dp).background(Color.White, CircleShape))
-                } else if (index < selectedIndex) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Box(modifier = Modifier.size(6.dp).background(AppPrimary.copy(alpha = 0.2f), CircleShape))
+                    // Online indicator
+                    Surface(
+                        modifier = Modifier
+                            .size(14.dp)
+                            .align(Alignment.BottomEnd),
+                        shape = CircleShape,
+                        color = Primary,
+                        border = BorderStroke(2.dp, BackgroundLight)
+                    ) {}
+                }
+
+                Column {
+                    Text(
+                        text = greeting.uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextMuted,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.2.sp
+                    )
+                    Text(
+                        text = "Alex",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = TextMain,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
+
+            // Notifications
+            Box {
+                Surface(
+                    modifier = Modifier.size(44.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    color = SurfaceLight,
+                    shadowElevation = 2.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = "Notifications",
+                            tint = TextMain,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+
+                // Notification badge
+                Surface(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .align(Alignment.TopEnd)
+                        .offset(x = (-4).dp, y = 4.dp),
+                    shape = CircleShape,
+                    color = Highlight
+                ) {}
+            }
         }
     }
 }
 
 @Composable
-fun DailyProgressCard(completedCount: Int, totalCount: Int) {
-    val progress = if (totalCount > 0) completedCount.toFloat() / totalCount.toFloat() else 0f
+fun DateSelector() {
+    val days = remember {
+        val today = Calendar.getInstance()
+        (0..5).map { offset ->
+            val calendar = Calendar.getInstance()
+            calendar.add(Calendar.DAY_OF_MONTH, offset - 2) // -2 to start from 2 days ago
+            DateItem(
+                dayName = SimpleDateFormat("EEE", Locale.getDefault()).format(calendar.time),
+                dayNumber = calendar.get(Calendar.DAY_OF_MONTH),
+                isToday = offset == 2 // Middle one is today
+            )
+        }
+    }
+
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        itemsIndexed(days) { index, day ->
+            DateCard(
+                day = day,
+                isToday = index == 2
+            )
+        }
+    }
+}
+
+data class DateItem(val dayName: String, val dayNumber: Int, val isToday: Boolean)
+
+@Composable
+fun DateCard(day: DateItem, isToday: Boolean) {
+    val scale by animateFloatAsState(
+        targetValue = if (isToday) 1.05f else 1f,
+        animationSpec = spring(stiffness = Spring.StiffnessMedium)
+    )
+
+    Surface(
+        modifier = Modifier
+            .width(60.dp)
+            .height(84.dp)
+            .scale(scale),
+        shape = RoundedCornerShape(20.dp),
+        color = if (isToday) Primary else SurfaceLight,
+        shadowElevation = if (isToday) 8.dp else 2.dp,
+        border = if (isToday) BorderStroke(2.dp, Primary.copy(alpha = 0.3f)) else null
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = day.dayName,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isToday) Color.White.copy(alpha = 0.9f) else TextMuted,
+                fontWeight = FontWeight.Medium
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = day.dayNumber.toString(),
+                style = MaterialTheme.typography.titleLarge,
+                color = if (isToday) Color.White else TextMain,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Surface(
+                modifier = Modifier.size(6.dp),
+                shape = CircleShape,
+                color = if (isToday) Color.White else Primary.copy(alpha = 0.3f)
+            ) {}
+        }
+    }
+}
+
+@Composable
+fun ProgressCard(
+    completedToday: Int,
+    totalHabits: Int,
+    totalStreak: Int
+) {
+    val progress = if (totalHabits > 0) completedToday.toFloat() / totalHabits else 0f
     val percentage = (progress * 100).toInt()
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-            .height(180.dp)
-            .clip(RoundedCornerShape(32.dp))
-            .background(AppSurfaceDark)
+            .padding(horizontal = 20.dp, vertical = 8.dp)
     ) {
-        // Decorative Blurs
+        // Background blurs
         Box(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .offset(x = 20.dp, y = (-20).dp)
-                .size(150.dp)
-                .background(Brush.radialGradient(listOf(AppPrimary.copy(alpha = 0.3f), Color.Transparent)))
-        )
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .offset(x = (-20).dp, y = 20.dp)
-                .size(150.dp)
-                .background(Brush.radialGradient(listOf(AppHighlight.copy(alpha = 0.3f), Color.Transparent)))
-        )
+                .fillMaxWidth()
+                .height(160.dp)
+                .clip(RoundedCornerShape(32.dp))
+        ) {
+            // Dark gradient background
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.horizontalGradient(
+                            colors = listOf(
+                                Color(0xFF1a1c1e),
+                                Color(0xFF2c2e30)
+                            )
+                        )
+                    )
+            )
+
+            // Blur effects
+            Box(
+                modifier = Modifier
+                    .size(160.dp)
+                    .align(Alignment.TopEnd)
+                    .offset(x = 40.dp, y = (-40).dp)
+                    .background(Primary.copy(alpha = 0.25f), CircleShape)
+                    .blur(60.dp)
+            )
+
+            Box(
+                modifier = Modifier
+                    .size(160.dp)
+                    .align(Alignment.BottomStart)
+                    .offset(x = (-40).dp, y = 40.dp)
+                    .background(Highlight.copy(alpha = 0.3f), CircleShape)
+                    .blur(60.dp)
+            )
+        }
 
         // Content
-        Row(
+        Surface(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxWidth()
+                .height(160.dp),
+            shape = RoundedCornerShape(32.dp),
+            color = Color.Transparent
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Daily Progress",
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "You're on fire! 🔥",
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 30.sp
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Box(
-                    modifier = Modifier
-                        .background(Color.White.copy(alpha = 0.1f), RoundedCornerShape(20.dp))
-                        .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(20.dp))
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "$completedCount of $totalCount completed",
-                        color = Color.White.copy(alpha = 0.9f),
-                        fontSize = 12.sp
+                        text = "Daily Progress",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White.copy(alpha = 0.7f),
+                        letterSpacing = 1.sp
+                    )
+
+                    Text(
+                        text = "You're on fire! 🔥",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color.White.copy(alpha = 0.1f),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+                    ) {
+                        Text(
+                            text = "$completedToday of $totalHabits completed",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.9f),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+
+                // Circular progress
+                Box(
+                    modifier = Modifier.size(80.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.fillMaxSize(),
+                        color = Primary,
+                        strokeWidth = 6.dp,
+                        trackColor = Color.White.copy(alpha = 0.1f)
+                    )
+
+                    Text(
+                        text = "$percentage%",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
-
-            // Circular Progress
-            Box(contentAlignment = Alignment.Center) {
-                CircularProgress(
-                    percentage = progress,
-                    radius = 40.dp,
-                    strokeWidth = 8.dp,
-                    color = AppPrimary
-                )
-                Text(
-                    text = "$percentage%",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-            }
         }
+
     }
 }
 
 @Composable
 fun ModernHabitCard(
     habit: Habit,
+    streak: Int,
     isCheckedIn: Boolean,
     onCheckIn: () -> Unit,
+    onEdit: () -> Unit,
     onClick: () -> Unit
 ) {
-    val categoryColor = when(habit.name.length % 3) {
-        0 -> Color(0xFF10B981) // Hijau
-        1 -> Color(0xFFF97316) // Orange
-        else -> AppHighlight    // Ungu
+    val scale by animateFloatAsState(
+        targetValue = if (isCheckedIn) 0.98f else 1f,
+        animationSpec = spring(stiffness = Spring.StiffnessMedium)
+    )
+
+    val categoryColor = when (habit.category) {
+        "health" -> CategoryHealth
+        "productivity" -> CategoryProductivity
+        "learning" -> CategoryLearning
+        "mindfulness" -> CategoryMindfulness
+        "social" -> CategorySocial
+        else -> Primary
     }
 
-    val categoryName = when(habit.name.length % 3) {
-        0 -> "Health"
-        1 -> "Mindfulness"
-        else -> "Productivity"
-    }
-
-    val categoryBg = categoryColor.copy(alpha = 0.1f)
-
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp)
-            .shadow(elevation = 4.dp, spotColor = Color.Black.copy(alpha = 0.05f), shape = RoundedCornerShape(28.dp))
+            .padding(horizontal = 20.dp, vertical = 6.dp)
+            .scale(scale)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        color = SurfaceLight,
+        shadowElevation = 2.dp,
+        border = if (isCheckedIn) BorderStroke(1.dp, categoryColor.copy(alpha = 0.2f)) else null
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            // Top row: Category badge + Edit
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .background(categoryBg, RoundedCornerShape(100))
-                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = categoryColor.copy(alpha = 0.1f)
                 ) {
                     Text(
-                        text = categoryName.uppercase(),
+                        text = habit.category.uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
                         color = categoryColor,
-                        fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp
+                        letterSpacing = 1.sp,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                     )
                 }
 
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Edit",
-                    tint = AppTextMuted.copy(alpha = 0.5f),
-                    modifier = Modifier.size(18.dp)
-                )
+                IconButton(
+                    onClick = onEdit,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Habit",
+                        tint = TextMuted,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Main content row
             Row(
                 modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    CircularProgress(
-                        percentage = 0.7f,
-                        radius = 28.dp,
-                        strokeWidth = 3.dp,
-                        color = if (isCheckedIn) AppTextMuted.copy(alpha=0.3f) else categoryColor,
-                        trackColor = Color.Gray.copy(alpha = 0.1f)
-                    )
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = (habit.id.toInt() % 10 + 1).toString(),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = AppTextMain
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Circular streak indicator
+                    Box(
+                        modifier = Modifier.size(56.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            progress = { min(streak / 30f, 1f) },
+                            modifier = Modifier.fillMaxSize(),
+                            color = categoryColor,
+                            strokeWidth = 3.dp,
+                            trackColor = BorderLight
                         )
+
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = streak.toString(),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = TextMain,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "days",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextMuted,
+                                fontSize = 9.sp
+                            )
+                        }
+                    }
+
+                    // Habit info
+                    Column {
                         Text(
-                            text = "days",
-                            fontSize = 9.sp,
-                            color = AppTextMuted
+                            text = habit.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = TextMain,
+                            fontWeight = FontWeight.Bold
                         )
+
+                        if (isCheckedIn) {
+                            Text(
+                                text = "✓ Completed today!",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AccentSuccess,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        } else {
+                            Text(
+                                text = "${habit.icon} ${habit.description}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextMuted,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = habit.name,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = AppTextMain
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = if(habit.id % 2 == 0L) Icons.Default.LocalFireDepartment else Icons.Outlined.BarChart,
-                            contentDescription = null,
-                            tint = if(habit.id % 2 == 0L) Color(0xFFF97316) else AppHighlight,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = habit.description.ifEmpty { "15 mins" },
-                            fontSize = 12.sp,
-                            color = AppTextMuted,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-
-                Box(
+                // Check button
+                Surface(
                     modifier = Modifier
                         .size(52.dp)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(if (isCheckedIn) categoryColor else AppBackgroundLight)
-                        .border(
-                            1.dp,
-                            if (isCheckedIn) categoryColor else Color.Gray.copy(alpha = 0.2f),
-                            RoundedCornerShape(16.dp)
-                        )
-                        .clickable { onCheckIn() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Check",
-                        tint = if (isCheckedIn) Color.White else Color.Gray.copy(alpha = 0.4f),
-                        modifier = Modifier.size(24.dp)
+                        .clickable(
+                            enabled = !isCheckedIn,
+                            onClick = onCheckIn
+                        ),
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (isCheckedIn) categoryColor else categoryColor.copy(alpha = 0.1f),
+                    border = BorderStroke(
+                        2.dp,
+                        if (isCheckedIn) categoryColor else BorderLight
                     )
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (isCheckedIn) "✓" else "○",
+                            fontSize = 26.sp,
+                            color = if (isCheckedIn) Color.White else categoryColor,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
@@ -502,47 +752,33 @@ fun ModernHabitCard(
 }
 
 @Composable
-fun EmptyStateCompact(onAddHabit: () -> Unit) {
+fun EmptyState(onAddHabit: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(40.dp)
-            .alpha(0.6f),
+            .padding(40.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(modifier = Modifier.height(4.dp).width(120.dp).background(Color.Gray.copy(alpha=0.2f), CircleShape))
-        Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Keep going, you're doing great!",
-            fontSize = 12.sp,
-            color = AppTextMuted,
-            fontWeight = FontWeight.Medium
+            text = "🎯",
+            fontSize = 80.sp
         )
-    }
-}
 
-@Composable
-fun CircularProgress(
-    percentage: Float,
-    radius: androidx.compose.ui.unit.Dp,
-    strokeWidth: androidx.compose.ui.unit.Dp,
-    color: Color,
-    trackColor: Color = Color.White.copy(alpha = 0.1f)
-) {
-    Canvas(modifier = Modifier.size(radius * 2)) {
-        drawArc(
-            color = trackColor,
-            startAngle = 0f,
-            sweepAngle = 360f,
-            useCenter = false,
-            style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "No habits yet",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = TextMain
         )
-        drawArc(
-            color = color,
-            startAngle = -90f,
-            sweepAngle = 360 * percentage,
-            useCenter = false,
-            style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
+
+        Text(
+            text = "Tap the + button below to create your first habit!",
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextMuted,
+            modifier = Modifier.padding(top = 8.dp),
+            textAlign = TextAlign.Center
         )
     }
 }
