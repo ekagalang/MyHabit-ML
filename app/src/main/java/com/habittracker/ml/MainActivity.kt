@@ -4,13 +4,10 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.widget.LinearLayout
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.navigation.fragment.NavHostFragment
 import com.habittracker.ml.utils.NotificationHelper
 import android.app.AlarmManager
 import android.os.PowerManager
@@ -18,7 +15,6 @@ import android.net.Uri
 import android.provider.Settings
 import android.content.Context
 import android.content.Intent
-import com.habittracker.ml.utils.WorkManagerHelper
 import com.habittracker.ml.utils.ThemeManager
 import androidx.activity.compose.setContent
 import com.habittracker.ml.ui.MainScreen
@@ -35,17 +31,6 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Notification permission denied", Toast.LENGTH_SHORT).show()
         }
     }
-
-    // Navigation buttons
-    private lateinit var navHome: LinearLayout
-    private lateinit var navStats: LinearLayout
-    private lateinit var navProfile: LinearLayout
-
-    private lateinit var iconHome: TextView
-    private lateinit var iconStats: TextView
-    private lateinit var iconProfile: TextView
-
-    private lateinit var navController: androidx.navigation.NavController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Apply theme
@@ -71,97 +56,6 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         checkExactAlarmPermission()
-    }
-
-    private fun setupBottomNavigation() {
-        // Initialize views
-        navHome = findViewById(R.id.navHome)
-        navStats = findViewById(R.id.navStats)
-        navProfile = findViewById(R.id.navProfile)
-
-        iconHome = findViewById(R.id.iconHome)
-        iconStats = findViewById(R.id.iconStats)
-        iconProfile = findViewById(R.id.iconProfile)
-
-        // Set initial active state
-        setActiveNavItem(navHome, iconHome)
-
-        // Click listeners
-        navHome.setOnClickListener {
-            navigateToHome()
-        }
-
-        navStats.setOnClickListener {
-            navigateToStats()
-        }
-
-        navProfile.setOnClickListener {
-            navigateToProfile()
-        }
-
-        // Listen to navigation changes
-        navController.addOnDestinationChangedListener { _, destination, _ ->
-            when (destination.id) {
-                R.id.habitsListFragment -> setActiveNavItem(navHome, iconHome)
-                R.id.insightsFragment -> setActiveNavItem(navStats, iconStats)
-                R.id.settingsFragment -> setActiveNavItem(navProfile, iconProfile)
-            }
-        }
-    }
-
-    private fun navigateToHome() {
-        if (navController.currentDestination?.id != R.id.habitsListFragment) {
-            navController.navigate(R.id.habitsListFragment)
-        }
-        setActiveNavItem(navHome, iconHome)
-    }
-
-    private fun navigateToStats() {
-        if (navController.currentDestination?.id != R.id.insightsFragment) {
-            // Check if insights fragment exists in nav graph
-            try {
-                navController.navigate(R.id.insightsFragment)
-            } catch (e: Exception) {
-                // If insights fragment doesn't exist yet, show message
-                Toast.makeText(this, "Insights screen coming soon!", Toast.LENGTH_SHORT).show()
-            }
-        }
-        setActiveNavItem(navStats, iconStats)
-    }
-
-    private fun navigateToProfile() {
-        if (navController.currentDestination?.id != R.id.settingsFragment) {
-            navController.navigate(R.id.settingsFragment)
-        }
-        setActiveNavItem(navProfile, iconProfile)
-    }
-
-    private fun setActiveNavItem(activeLayout: LinearLayout, activeIcon: TextView) {
-        // Reset all
-        resetNavItem(navHome, iconHome)
-        resetNavItem(navStats, iconStats)
-        resetNavItem(navProfile, iconProfile)
-
-        // Set active
-        activeLayout.setBackgroundResource(R.drawable.bg_nav_active)
-        activeIcon.alpha = 1.0f
-
-        // Scale animation
-        activeIcon.animate()
-            .scaleX(1.1f)
-            .scaleY(1.1f)
-            .setDuration(200)
-            .start()
-    }
-
-    private fun resetNavItem(layout: LinearLayout, icon: TextView) {
-        layout.background = null
-        icon.alpha = 0.5f
-        icon.animate()
-            .scaleX(1.0f)
-            .scaleY(1.0f)
-            .setDuration(200)
-            .start()
     }
 
     private fun checkBatteryOptimization() {

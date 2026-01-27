@@ -58,12 +58,6 @@
         <item name="android:textColor">@color/text_main</item>
     </style>
 
-    <!-- Bottom Navigation Style -->
-    <style name="Widget.MyHabit.BottomNavigation" parent="">
-        <item name="android:background">@drawable/bg_bottom_nav</item>
-        <item name="android:elevation">16dp</item>
-    </style>
-
     <!-- Text Input Style -->
     <style name="Widget.MyHabit.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
         <item name="boxCornerRadiusTopStart">12dp</item>
