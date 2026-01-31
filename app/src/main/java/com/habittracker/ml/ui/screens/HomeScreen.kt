@@ -29,16 +29,28 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.habittracker.ml.data.local.entities.CheckIn
 import com.habittracker.ml.data.local.entities.Habit
 import com.habittracker.ml.ui.theme.*
-import com.habittracker.ml.utils.StreakCalculator
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.min
 import androidx.compose.ui.text.style.TextAlign
+import com.habittracker.ml.ui.components.MoodPicker
+import com.habittracker.ml.ui.components.EnergyLevelPicker
+import com.habittracker.ml.ui.components.StressLevelPicker
+import com.habittracker.ml.ui.components.LocationPicker
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import com.habittracker.ml.ui.components.CheckInSuccessAnimation
+import com.habittracker.ml.ui.components.StreakMilestoneDialog
+import com.habittracker.ml.utils.StreakCalculator
 
 @Composable
 fun HomeScreen(
@@ -46,10 +58,19 @@ fun HomeScreen(
     onNavigateToEditHabit: (Long) -> Unit = {},
     onNavigateToHabitDetail: (Long) -> Unit = {},
     onNavigateToWorkspace: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {},
     onNavigateToMLInsights: () -> Unit = {},
     viewModel: HomeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showCheckInDialog by remember { mutableStateOf(false) }
+    var selectedHabit by remember { mutableStateOf<Habit?>(null) }
+    var showSuccessAnimation by remember { mutableStateOf(false) }
+    var selectedHabitForAnimation by remember { mutableStateOf<Habit?>(null) }
+    var showMilestoneDialog by remember { mutableStateOf(false) }
+    var streakMilestone by remember { mutableStateOf(0) }
+    var pendingMilestoneHabitId by remember { mutableStateOf<Long?>(null) }
 
     // Refresh every time screen is displayed
     LaunchedEffect(key1 = true) {
@@ -63,6 +84,20 @@ fun HomeScreen(
         }
     }
 
+    LaunchedEffect(pendingMilestoneHabitId) {
+        val habitId = pendingMilestoneHabitId ?: return@LaunchedEffect
+        val habitWithCheckIns = viewModel.getHabitWithCheckIns(habitId)
+        val checkIns = habitWithCheckIns?.checkIns ?: emptyList()
+        val currentStreak = StreakCalculator.calculateCurrentStreak(checkIns)
+        if (currentStreak > 0 &&
+            (currentStreak % 7 == 0 || currentStreak == 30 || currentStreak == 100)
+        ) {
+            streakMilestone = currentStreak
+            showMilestoneDialog = true
+        }
+        pendingMilestoneHabitId = null
+    }
+
     Scaffold(
         containerColor = BackgroundLight,
         topBar = {
@@ -71,7 +106,10 @@ fun HomeScreen(
                 shadowElevation = 2.dp
             ) {
                 Column {
-                    DashboardHeader()
+                    DashboardHeader(
+                        onNavigateToProfile = onNavigateToProfile,
+                        onNavigateToNotifications = onNavigateToNotifications
+                    )
                     HorizontalDivider(
                         color = BorderLight.copy(alpha = 0.6f),
                         thickness = 1.dp
@@ -246,7 +284,10 @@ fun HomeScreen(
                             StreakCalculator.calculateCurrentStreak(it.checkIns)
                         } ?: 0,
                         isCheckedIn = viewModel.isHabitCheckedInToday(habit.id),
-                        onCheckIn = { viewModel.checkInHabit(habit.id) },
+                        onCheckIn = {
+                            selectedHabit = habit
+                            showCheckInDialog = true
+                        },
                         onEdit = { onNavigateToEditHabit(habit.id) },
                         onClick = { onNavigateToHabitDetail(habit.id) }
                     )
@@ -258,11 +299,185 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
+
+        // Success Animation Overlay
+        if (showSuccessAnimation && selectedHabitForAnimation != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.7f))
+            ) {
+                CheckInSuccessAnimation(
+                    habitName = selectedHabitForAnimation?.name ?: "",
+                    onAnimationEnd = {
+                        showSuccessAnimation = false
+                        selectedHabitForAnimation = null
+                    }
+                )
+            }
+        }
+
+// Milestone Dialog
+        if (showMilestoneDialog) {
+            StreakMilestoneDialog(
+                streak = streakMilestone,
+                habitName = selectedHabitForAnimation?.name ?: "",
+                onDismiss = { showMilestoneDialog = false }
+            )
+        }
+    }
+
+    val dialogHabit = selectedHabit
+    if (showCheckInDialog && dialogHabit != null) {
+        var note by remember { mutableStateOf("") }
+        var mood by remember { mutableStateOf<String?>(null) }
+        var energyLevel by remember { mutableStateOf<Int?>(null) }
+        var stressLevel by remember { mutableStateOf<Int?>(null) }
+        var location by remember { mutableStateOf<String?>(null) }
+        var showAdvancedOptions by remember { mutableStateOf(false) }
+
+        AlertDialog(
+            onDismissRequest = {
+                showCheckInDialog = false
+                selectedHabit = null
+            },
+            title = {
+                Text(
+                    text = "Check-in: ${dialogHabit.name}",
+                    style = MaterialTheme.typography.titleLarge
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Mood Picker
+                    MoodPicker(
+                        selectedMood = mood,
+                        onMoodSelected = { mood = it }
+                    )
+
+                    HorizontalDivider()
+
+                    // Note
+                    OutlinedTextField(
+                        value = note,
+                        onValueChange = { note = it },
+                        label = { Text("Add note (optional)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 3
+                    )
+
+                    // Advanced Options Toggle
+                    TextButton(
+                        onClick = { showAdvancedOptions = !showAdvancedOptions },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            if (showAdvancedOptions) "Hide advanced options" else "Show advanced options",
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                        Icon(
+                            imageVector = if (showAdvancedOptions)
+                                Icons.Default.ExpandLess
+                            else
+                                Icons.Default.ExpandMore,
+                            contentDescription = null,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                    }
+
+                    // Advanced Options
+                    if (showAdvancedOptions) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            EnergyLevelPicker(
+                                selectedLevel = energyLevel,
+                                onLevelSelected = { energyLevel = it }
+                            )
+
+                            HorizontalDivider()
+
+                            StressLevelPicker(
+                                selectedLevel = stressLevel,
+                                onLevelSelected = { stressLevel = it }
+                            )
+
+                            HorizontalDivider()
+
+                            LocationPicker(
+                                selectedLocation = location,
+                                onLocationSelected = { location = it }
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val currentTime = SimpleDateFormat("HH:mm", Locale.getDefault())
+                            .format(Date())
+                        val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                            .format(Date())
+
+                        // Calculate if late
+                        val reminderTime = dialogHabit.reminderTime ?: "08:00"
+                        val isLate = isCheckInLate(currentTime, reminderTime)
+                        val minutesLate = calculateMinutesLate(currentTime, reminderTime)
+
+                        val checkIn = CheckIn(
+                            habitId = dialogHabit.id,
+                            date = currentDate,
+                            completedAt = currentTime,
+                            note = note.ifBlank { null },
+                            mood = mood,
+                            isLate = isLate,
+                            minutesLate = if (isLate) minutesLate else 0,
+                            energyLevel = energyLevel,
+                            stressLevel = stressLevel,
+                            location = location,
+                            weather = null // Can add weather API later
+                        )
+
+                        viewModel.checkInHabit(checkIn)
+                        showCheckInDialog = false
+                        selectedHabit = null
+
+                        // Show success animation
+                        showSuccessAnimation = true
+                        selectedHabitForAnimation = dialogHabit
+
+                        // Check for streak milestone
+                        pendingMilestoneHabitId = dialogHabit.id
+                    }
+                ) {
+                    Text("Check-in")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showCheckInDialog = false
+                        selectedHabit = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
 @Composable
-fun DashboardHeader() {
+fun DashboardHeader(
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {}
+) {
     val greeting = remember {
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         when (hour) {
@@ -291,7 +506,9 @@ fun DashboardHeader() {
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Avatar with online indicator
-                Box {
+                Box(
+                    modifier = Modifier.clickable(onClick = onNavigateToProfile)
+                ) {
                     Surface(
                         modifier = Modifier.size(48.dp),
                         shape = CircleShape,
@@ -335,7 +552,9 @@ fun DashboardHeader() {
             }
 
             // Notifications
-            Box {
+            Box(
+                modifier = Modifier.clickable(onClick = onNavigateToNotifications)
+            ) {
                 Surface(
                     modifier = Modifier.size(44.dp),
                     shape = RoundedCornerShape(14.dp),
@@ -530,11 +749,30 @@ fun ProgressCard(
                         letterSpacing = 1.sp
                     )
 
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Primary.copy(alpha = 0.25f)
+                    ) {
+                        Text(
+                            text = "✨ Nice work",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+
                     Text(
-                        text = "You're on fire! 🔥",
+                        text = "You're on a roll",
                         style = MaterialTheme.typography.headlineMedium,
                         color = Color.White,
                         fontWeight = FontWeight.Bold
+                    )
+
+                    Text(
+                        text = "Keep the streak alive today",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.75f)
                     )
 
                     Surface(
@@ -659,7 +897,8 @@ fun ModernHabitCard(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
                     // Circular streak indicator
                     Box(
@@ -693,12 +932,14 @@ fun ModernHabitCard(
                     }
 
                     // Habit info
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = habit.name,
                             style = MaterialTheme.typography.titleMedium,
                             color = TextMain,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
 
                         if (isCheckedIn) {
@@ -706,14 +947,18 @@ fun ModernHabitCard(
                                 text = "✓ Completed today!",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = AccentSuccess,
-                                modifier = Modifier.padding(top = 4.dp)
+                                modifier = Modifier.padding(top = 4.dp),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         } else {
                             Text(
                                 text = "${habit.icon} ${habit.description}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = TextMuted,
-                                modifier = Modifier.padding(top = 4.dp)
+                                modifier = Modifier.padding(top = 4.dp),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -722,7 +967,7 @@ fun ModernHabitCard(
                 // Check button
                 Surface(
                     modifier = Modifier
-                        .size(52.dp)
+                        .requiredSize(52.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .clickable(
                             enabled = !isCheckedIn,
@@ -780,5 +1025,28 @@ fun EmptyState(onAddHabit: () -> Unit) {
             modifier = Modifier.padding(top = 8.dp),
             textAlign = TextAlign.Center
         )
+    }
+}
+
+private fun isCheckInLate(currentTime: String, reminderTime: String): Boolean {
+    return try {
+        val format = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val current = format.parse(currentTime)?.time ?: 0
+        val reminder = format.parse(reminderTime)?.time ?: 0
+        current > reminder + (30 * 60 * 1000) // 30 minutes grace period
+    } catch (e: Exception) {
+        false
+    }
+}
+
+private fun calculateMinutesLate(currentTime: String, reminderTime: String): Int {
+    return try {
+        val format = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val current = format.parse(currentTime)?.time ?: 0
+        val reminder = format.parse(reminderTime)?.time ?: 0
+        val diff = current - reminder
+        if (diff > 0) (diff / (1000 * 60)).toInt() else 0
+    } catch (e: Exception) {
+        0
     }
 }

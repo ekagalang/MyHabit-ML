@@ -31,6 +31,14 @@ interface CheckInDao {
     @Query("SELECT COUNT(*) FROM check_ins WHERE habitId = :habitId")
     suspend fun getCheckInCountForHabit(habitId: Long): Int
 
+    // Add these methods to CheckInDao interface:
+
+    @Query("SELECT * FROM check_ins ORDER BY date DESC")
+    fun getAllCheckInsSync(): List<CheckIn>
+
+    @Query("SELECT * FROM check_ins WHERE habitId = :habitId AND date = :date LIMIT 1")
+    fun getCheckInByDateSync(habitId: Long, date: String): CheckIn?
+
     @Query("""
         SELECT * FROM check_ins 
         WHERE habitId = :habitId 

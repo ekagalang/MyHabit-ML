@@ -3,14 +3,42 @@ package com.habittracker.ml.data.repository
 import androidx.lifecycle.LiveData
 import com.habittracker.ml.data.local.database.CheckInDao
 import com.habittracker.ml.data.local.database.HabitDao
+import com.habittracker.ml.data.local.database.HabitTemplateDao
 import com.habittracker.ml.data.local.entities.CheckIn
 import com.habittracker.ml.data.local.entities.Habit
+import com.habittracker.ml.data.local.entities.HabitTemplate
 import com.habittracker.ml.data.local.entities.HabitWithCheckIns
 
 class HabitRepository(
     private val habitDao: HabitDao,
-    private val checkInDao: CheckInDao
+    private val checkInDao: CheckInDao,
+    private val habitTemplateDao: HabitTemplateDao
 ) {
+
+    // Template operations
+    fun getAllTemplates(): LiveData<List<HabitTemplate>> {
+        return habitTemplateDao.getAllTemplates()
+    }
+
+    suspend fun insertTemplate(template: HabitTemplate) {
+        habitTemplateDao.insertTemplate(template)
+    }
+
+    suspend fun updateTemplate(template: HabitTemplate) {
+        habitTemplateDao.updateTemplate(template)
+    }
+
+    suspend fun deleteTemplate(template: HabitTemplate) {
+        habitTemplateDao.deleteTemplate(template)
+    }
+
+    suspend fun deleteTemplateById(templateId: Int) {
+        habitTemplateDao.deleteTemplateById(templateId)
+    }
+
+    suspend fun getTemplateById(templateId: Int): HabitTemplate? {
+        return habitTemplateDao.getTemplateById(templateId)
+    }
 
     // Habit operations
     fun getAllActiveHabits(): LiveData<List<Habit>> {
@@ -76,5 +104,23 @@ class HabitRepository(
 
     suspend fun getAllHabitsWithCheckIns(): List<HabitWithCheckIns> {
         return habitDao.getAllHabitsWithCheckIns()
+    }
+
+    // Add these methods to HabitRepository class:
+
+    fun getAllHabitsSync(): List<Habit> {
+        return habitDao.getAllHabitsSync()
+    }
+
+    fun getAllCheckInsSync(): List<CheckIn> {
+        return checkInDao.getAllCheckInsSync()
+    }
+
+    fun getHabitByIdSync(id: Long): Habit? {
+        return habitDao.getHabitByIdSync(id)
+    }
+
+    fun getCheckInByDateSync(habitId: Long, date: String): CheckIn? {
+        return checkInDao.getCheckInByDateSync(habitId, date)
     }
 }

@@ -9,12 +9,16 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.habittracker.ml.MainActivity
 import com.habittracker.ml.R
+import com.habittracker.ml.data.local.preferences.AppPreferences
+import com.habittracker.ml.data.local.preferences.NotificationHistoryItem
 
 object NotificationHelper {
 
     private const val CHANNEL_ID = "habit_reminders"
     private const val CHANNEL_NAME = "Habit Reminders"
     private const val CHANNEL_DESCRIPTION = "Daily reminders for your habits"
+    private const val TYPE_HABIT = "habit_reminder"
+    private const val TYPE_DAILY_SUMMARY = "daily_summary"
 
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -46,10 +50,12 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val title = "$habitIcon Time for $habitName!"
+        val message = "Don't break your streak! Tap to check in."
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("$habitIcon Time for $habitName!")
-            .setContentText("Don't break your streak! Tap to check in.")
+            .setContentTitle(title)
+            .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
@@ -57,6 +63,7 @@ object NotificationHelper {
 
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(habitId.toInt(), notification)
+        logNotification(context, TYPE_HABIT, title, message)
     }
 
     fun sendDailySummary(context: Context, completedCount: Int, totalCount: Int) {
@@ -68,10 +75,12 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val title = "Daily Summary 📊"
+        val message = "You've completed $completedCount of $totalCount habits today!"
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("Daily Summary 📊")
-            .setContentText("You've completed $completedCount of $totalCount habits today!")
+            .setContentTitle(title)
+            .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
@@ -79,5 +88,23 @@ object NotificationHelper {
 
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(9999, notification)
+        logNotification(context, TYPE_DAILY_SUMMARY, title, message)
+    }
+
+    private fun logNotification(
+        context: Context,
+        type: String,
+        title: String,
+        message: String
+    ) {
+        val prefs = AppPreferences(context)
+        val item = NotificationHistoryItem(
+            id = System.currentTimeMillis(),
+            title = title,
+            message = message,
+            timestamp = System.currentTimeMillis(),
+            type = type
+        )
+        prefs.addNotificationHistory(item)
     }
 }

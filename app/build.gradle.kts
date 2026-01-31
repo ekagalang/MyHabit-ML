@@ -99,6 +99,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
     implementation("androidx.navigation:navigation-compose:2.7.6")
+    implementation("androidx.compose.runtime:runtime-livedata")
 
     // Compose UI Tooling
     debugImplementation("androidx.compose.ui:ui-tooling")

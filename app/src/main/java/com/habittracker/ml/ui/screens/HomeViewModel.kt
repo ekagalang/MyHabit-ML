@@ -35,7 +35,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         val database = HabitDatabase.getDatabase(application)
-        repository = HabitRepository(database.habitDao(), database.checkInDao())
+        repository = HabitRepository(database.habitDao(), database.checkInDao(), database.habitTemplateDao())
 
         loadData()
     }
@@ -121,6 +121,19 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 loadData() // Refresh
             } else {
                 println("⚠️ Already checked in today")
+            }
+        }
+    }
+
+    fun checkInHabit(checkIn: CheckIn) {
+        viewModelScope.launch {
+            val existingCheckIn = repository.getCheckInForDate(checkIn.habitId, checkIn.date)
+            if (existingCheckIn == null) {
+                repository.insertCheckIn(checkIn)
+                println("✅ Check-in created for habit ${checkIn.habitId}")
+                loadData() // Refresh
+            } else {
+                println("⚠️ Already checked in for ${checkIn.date}")
             }
         }
     }

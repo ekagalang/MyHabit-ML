@@ -28,7 +28,7 @@ class PredictionWorker(
 
             // Get database instances
             val database = HabitDatabase.getDatabase(applicationContext)
-            val habitRepository = HabitRepository(database.habitDao(), database.checkInDao())
+            val habitRepository = HabitRepository(database.habitDao(), database.checkInDao(), database.habitTemplateDao())
             val predictionRepository = PredictionRepository(database.predictionDao())
 
             // Get all habits with check-ins

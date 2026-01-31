@@ -22,6 +22,7 @@ class AppPreferences(context: Context) {
         private const val KEY_PROFILE_NAME = "profile_name"
         private const val KEY_PROFILE_EMAIL = "profile_email"
         private const val KEY_CUSTOM_CATEGORIES = "custom_categories"
+        private const val KEY_NOTIFICATION_HISTORY = "notification_history"
     }
 
     var defaultReminderTime: String
@@ -103,5 +104,42 @@ class AppPreferences(context: Context) {
     fun setCategories(categories: List<CustomCategory>) {
         val json = Gson().toJson(categories)
         prefs.edit().putString(KEY_CUSTOM_CATEGORIES, json).apply()
+    }
+
+    fun getNotificationHistory(): List<com.habittracker.ml.data.local.preferences.NotificationHistoryItem> {
+        val json = prefs.getString(KEY_NOTIFICATION_HISTORY, null)
+        return if (json.isNullOrBlank()) {
+            emptyList()
+        } else {
+            try {
+                val type = object : TypeToken<List<com.habittracker.ml.data.local.preferences.NotificationHistoryItem>>() {}.type
+                Gson().fromJson<List<com.habittracker.ml.data.local.preferences.NotificationHistoryItem>>(json, type)
+                    ?: emptyList()
+            } catch (e: Exception) {
+                emptyList()
+            }
+        }
+    }
+
+    fun addNotificationHistory(item: com.habittracker.ml.data.local.preferences.NotificationHistoryItem) {
+        val current = getNotificationHistory()
+        val updated = (listOf(item) + current).take(200)
+        val json = Gson().toJson(updated)
+        prefs.edit().putString(KEY_NOTIFICATION_HISTORY, json).apply()
+    }
+
+    fun clearNotificationHistory() {
+        prefs.edit().remove(KEY_NOTIFICATION_HISTORY).apply()
+    }
+
+    // Onboarding
+    private val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
+
+    var isOnboardingCompleted: Boolean
+        get() = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
+        set(value) = prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETED, value).apply()
+
+    fun completeOnboarding() {
+        isOnboardingCompleted = true
     }
 }

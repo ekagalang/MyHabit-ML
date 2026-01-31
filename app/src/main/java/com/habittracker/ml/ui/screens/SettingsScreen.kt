@@ -17,7 +17,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -39,6 +41,7 @@ import com.habittracker.ml.data.local.preferences.AppPreferences
 import com.habittracker.ml.ui.theme.*
 import com.habittracker.ml.utils.ThemeManager
 import kotlinx.coroutines.launch
+import android.app.Activity
 
 private data class ExportPayload(
     val habits: List<Habit>,
@@ -85,6 +88,8 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onNavigateToCategories: () -> Unit = {},
+    onNavigateToBackup: () -> Unit = {},
+    onNavigateToManageTemplates: () -> Unit = {},
     viewModel: HomeViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -203,6 +208,12 @@ fun SettingsScreen(
             }
         }
 
+        item {
+            HorizontalDivider()
+        }
+
+        // (Show Onboarding Again moved to Appearance section)
+
         item { Spacer(modifier = Modifier.height(8.dp)) }
 
         item {
@@ -294,10 +305,38 @@ fun SettingsScreen(
                     HorizontalDivider(color = BorderLight, modifier = Modifier.padding(horizontal = 16.dp))
 
                     SettingNavigationItem(
+                        icon = Icons.Default.Category,
+                        title = "Manage Templates",
+                        subtitle = "Create & edit custom templates",
+                        onClick = onNavigateToManageTemplates
+                    )
+
+                    HorizontalDivider(color = BorderLight, modifier = Modifier.padding(horizontal = 16.dp))
+
+                    SettingNavigationItem(
                         icon = Icons.Default.Star,
                         title = "App Icon",
                         subtitle = "Default",
                         onClick = { Toast.makeText(context, "Coming soon", Toast.LENGTH_SHORT).show() }
+                    )
+
+                    HorizontalDivider(color = BorderLight, modifier = Modifier.padding(horizontal = 16.dp))
+
+                    SettingNavigationItem(
+                        icon = Icons.AutoMirrored.Filled.Help,
+                        title = "Show Onboarding Again",
+                        subtitle = "Replay the welcome tutorial",
+                        onClick = {
+                            val prefs = AppPreferences(context)
+                            prefs.isOnboardingCompleted = false
+
+                            // Restart app
+                            val intent = context.packageManager
+                                .getLaunchIntentForPackage(context.packageName)
+                            intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                            context.startActivity(intent)
+                            (context as? Activity)?.finish()
+                        }
                     )
                 }
             }
@@ -326,10 +365,10 @@ fun SettingsScreen(
                     HorizontalDivider(color = BorderLight, modifier = Modifier.padding(horizontal = 16.dp))
 
                     SettingNavigationItem(
-                        icon = Icons.Default.CloudUpload,
+                        icon = Icons.Default.Backup,
                         title = "Backup & Restore",
-                        subtitle = "Save or import your data",
-                        onClick = { showBackupDialog = true }
+                        subtitle = "Export or import your data",
+                        onClick = { onNavigateToBackup() }
                     )
 
                     HorizontalDivider(color = BorderLight, modifier = Modifier.padding(horizontal = 16.dp))
@@ -626,6 +665,8 @@ fun SettingsScreen(
         )
     }
 }
+
+
 
 @Composable
 fun ProfileQuickCard(

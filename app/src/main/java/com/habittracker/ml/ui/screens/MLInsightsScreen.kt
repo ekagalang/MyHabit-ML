@@ -49,6 +49,7 @@ fun MLInsightsScreen(
     onNavigateBack: () -> Unit = {},
     showBack: Boolean = true,
     onNavigateToHabitDetail: (Long) -> Unit = {},
+    onNavigateToAdvancedInsights: () -> Unit = {},
     viewModel: HomeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -184,6 +185,19 @@ fun MLInsightsScreen(
 
                     Box(modifier = Modifier.size(40.dp))
                 }
+            }
+        }
+
+        item {
+            OutlinedButton(
+                onClick = onNavigateToAdvancedInsights,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+            ) {
+                Icon(Icons.Default.Psychology, null)
+                Spacer(Modifier.width(8.dp))
+                Text("View Advanced Insights")
             }
         }
 
@@ -795,31 +809,27 @@ fun InsightsGrid(
             title = "Improving Habits",
             value = improving.toString(),
             subtitle = "Great momentum!",
-            color = Color(0xFF10B981)
+            color = Color(0xFF10B981),
+            modifier = Modifier.fillMaxWidth()
         )
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            InsightCard(
-                icon = "→",
-                title = "Stable",
-                value = stable.toString(),
-                subtitle = "Keep going",
-                color = Color(0xFF6366F1),
-                modifier = Modifier.weight(1f)
-            )
+        InsightCard(
+            icon = "→",
+            title = "Stable",
+            value = stable.toString(),
+            subtitle = "Keep going",
+            color = Color(0xFF6366F1),
+            modifier = Modifier.fillMaxWidth()
+        )
 
-            InsightCard(
-                icon = "📉",
-                title = "Need Focus",
-                value = declining.toString(),
-                subtitle = "Rebuild momentum",
-                color = Color(0xFFF59E0B),
-                modifier = Modifier.weight(1f)
-            )
-        }
+        InsightCard(
+            icon = "📉",
+            title = "Need Focus",
+            value = declining.toString(),
+            subtitle = "Rebuild momentum",
+            color = Color(0xFFF59E0B),
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 

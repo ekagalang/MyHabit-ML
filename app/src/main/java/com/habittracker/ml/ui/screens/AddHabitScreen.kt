@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.ui.window.Dialog
@@ -36,6 +37,10 @@ import com.habittracker.ml.data.local.entities.Habit
 import com.habittracker.ml.data.local.preferences.AppPreferences
 import com.habittracker.ml.data.local.preferences.CustomCategory
 import com.habittracker.ml.ui.theme.*
+import com.habittracker.ml.ui.habits.HabitsViewModel
+import com.habittracker.ml.ui.habits.HabitsViewModelFactory
+import com.habittracker.ml.data.repository.HabitRepository
+import com.habittracker.ml.data.local.database.HabitDatabase
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -91,16 +96,37 @@ fun categoryToHex(category: HabitCategory): String {
 
 @Composable
 fun AddHabitScreen(
-    onNavigateBack: () -> Unit = {},
-    viewModel: HomeViewModel = viewModel()
+    onNavigateBack: () -> Unit,
+    onNavigateToTemplates: () -> Unit,
+    templateId: String? = null,
+    templateName: String? = null,
+    templateDesc: String? = null,
+    templateCategory: String? = null,
+    templateIcon: String? = null,
+    templateFreq: String? = null,
+    templateTime: String? = null,
+    viewModel: HabitsViewModel = viewModel(
+        factory = HabitsViewModelFactory(
+            HabitRepository(
+                HabitDatabase.getDatabase(LocalContext.current).habitDao(),
+                HabitDatabase.getDatabase(LocalContext.current).checkInDao(),
+                HabitDatabase.getDatabase(LocalContext.current).habitTemplateDao()
+            ),
+            LocalContext.current
+        )
+    )
 ) {
-    var habitName by remember { mutableStateOf("") }
-    var habitDescription by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf<HabitCategory?>(null) }
+    var habitName by remember { mutableStateOf(templateName ?: "") }
+    var habitDescription by remember { mutableStateOf(templateDesc ?: "") }
+    var selectedIcon by remember { mutableStateOf(templateIcon ?: "💪") }
     var frequencyType by remember { mutableStateOf(FrequencyType.DAILY) }
+    var selectedDays by remember { mutableStateOf(emptySet<DayOfWeek>()) }
     var reminderEnabled by remember { mutableStateOf(false) }
-    var selectedDays by remember { mutableStateOf(setOf<DayOfWeek>()) }
-    var reminderTime by remember { mutableStateOf("08:00") }
+    var reminderTime by remember { 
+        mutableStateOf(
+            if (templateTime.isNullOrBlank()) "08:00" else templateTime
+        ) 
+    }
     var showError by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
@@ -113,6 +139,18 @@ fun AddHabitScreen(
 
     val categories = remember(categoriesData) {
         categoriesData.filter { it.isEnabled }.toHabitCategories()
+    }
+
+    // Initialize selectedCategory based on templateCategory or default
+    var selectedCategory by remember(categories) {
+        mutableStateOf(
+            if (templateCategory != null) {
+                categories.find { it.id == templateCategory || it.name == templateCategory }
+                    ?: categories.firstOrNull()
+            } else {
+                categories.firstOrNull { it.id == "health" } ?: categories.firstOrNull()
+            }
+        )
     }
 
     LazyColumn(
@@ -464,6 +502,22 @@ fun AddHabitScreen(
                 )
             }
 
+            // Template Button
+            if (templateId == null) {
+                item {
+                    OutlinedButton(
+                        onClick = onNavigateToTemplates,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.LibraryBooks, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Use Template")
+                    }
+                }
+            }
+
             item { Spacer(modifier = Modifier.height(24.dp)) }
 
             // Save Button
@@ -547,9 +601,12 @@ fun ReminderCard(
 ) {
     var showTimePicker by remember { mutableStateOf(false) }
     val parts = reminderTime.split(":")
+    val initialHour = parts.getOrNull(0)?.toIntOrNull() ?: 8
+    val initialMinute = parts.getOrNull(1)?.toIntOrNull() ?: 0
+    
     val timePickerState = rememberTimePickerState(
-        initialHour = parts[0].toIntOrNull() ?: 8,
-        initialMinute = parts[1].toIntOrNull() ?: 0,
+        initialHour = initialHour,
+        initialMinute = initialMinute,
         is24Hour = false
     )
 

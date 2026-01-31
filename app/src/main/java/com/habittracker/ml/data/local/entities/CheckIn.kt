@@ -23,9 +23,17 @@ data class CheckIn(
 
     val habitId: Long,
     val timestamp: Long = System.currentTimeMillis(),
-    val date: String, // format: "yyyy-MM-dd" (e.g., "2025-01-11")
-    val completedAt: String, // format: "HH:mm" (e.g., "14:30")
+    val date: String, // format: "yyyy-MM-dd"
+    val completedAt: String, // format: "HH:mm"
 
     val note: String? = null,
-    val mood: Int? = null // 1-5 scale (optional for future)
+    val mood: String? = null, // "very_happy", "happy", "neutral", "sad", "very_sad"
+
+    // Advanced tracking (NEW)
+    val isLate: Boolean = false,
+    val minutesLate: Int = 0,
+    val energyLevel: Int? = null, // 1-5 scale
+    val stressLevel: Int? = null, // 1-5 scale
+    val location: String? = null, // "home", "work", "gym", "outdoor"
+    val weather: String? = null // "sunny", "rainy", "cloudy", "cold"
 )

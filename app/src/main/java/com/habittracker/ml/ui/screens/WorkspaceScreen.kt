@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -211,42 +212,51 @@ fun WorkspaceScreen(
 
             // Category Filters
             item {
-                Row(
+                LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                        .padding(vertical = 8.dp),
+                    contentPadding = PaddingValues(horizontal = 20.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    FilterChip(
-                        text = "All",
-                        count = uiState.habits.size,
-                        isSelected = selectedFilter == WorkspaceFilter.ALL,
-                        onClick = { selectedFilter = WorkspaceFilter.ALL }
-                    )
+                    item {
+                        FilterChip(
+                            text = "All",
+                            count = uiState.habits.size,
+                            isSelected = selectedFilter == WorkspaceFilter.ALL,
+                            onClick = { selectedFilter = WorkspaceFilter.ALL }
+                        )
+                    }
 
-                    FilterChip(
-                        text = "Health",
-                        count = uiState.habits.count { it.category == "health" },
-                        isSelected = selectedFilter == WorkspaceFilter.HEALTH,
-                        onClick = { selectedFilter = WorkspaceFilter.HEALTH },
-                        color = CategoryHealth
-                    )
+                    item {
+                        FilterChip(
+                            text = "Health",
+                            count = uiState.habits.count { it.category == "health" },
+                            isSelected = selectedFilter == WorkspaceFilter.HEALTH,
+                            onClick = { selectedFilter = WorkspaceFilter.HEALTH },
+                            color = CategoryHealth
+                        )
+                    }
 
-                    FilterChip(
-                        text = "Mind",
-                        count = uiState.habits.count { it.category == "mindfulness" },
-                        isSelected = selectedFilter == WorkspaceFilter.MINDFULNESS,
-                        onClick = { selectedFilter = WorkspaceFilter.MINDFULNESS },
-                        color = CategoryMindfulness
-                    )
+                    item {
+                        FilterChip(
+                            text = "Mind",
+                            count = uiState.habits.count { it.category == "mindfulness" },
+                            isSelected = selectedFilter == WorkspaceFilter.MINDFULNESS,
+                            onClick = { selectedFilter = WorkspaceFilter.MINDFULNESS },
+                            color = CategoryMindfulness
+                        )
+                    }
 
-                    FilterChip(
-                        text = "Work",
-                        count = uiState.habits.count { it.category == "productivity" },
-                        isSelected = selectedFilter == WorkspaceFilter.PRODUCTIVITY,
-                        onClick = { selectedFilter = WorkspaceFilter.PRODUCTIVITY },
-                        color = CategoryProductivity
-                    )
+                    item {
+                        FilterChip(
+                            text = "Work",
+                            count = uiState.habits.count { it.category == "productivity" },
+                            isSelected = selectedFilter == WorkspaceFilter.PRODUCTIVITY,
+                            onClick = { selectedFilter = WorkspaceFilter.PRODUCTIVITY },
+                            color = CategoryProductivity
+                        )
+                    }
                 }
             }
 
@@ -348,7 +358,7 @@ fun WorkspaceScreen(
         }
 
         // Floating Action Button
-        FloatingActionButton(
+        SmallFloatingActionButton(
             onClick = onNavigateToAddHabit,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -356,13 +366,13 @@ fun WorkspaceScreen(
             containerColor = Primary,
             contentColor = Color.White,
             elevation = FloatingActionButtonDefaults.elevation(
-                defaultElevation = 8.dp
+                defaultElevation = 6.dp
             )
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = "Add Habit",
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
     }

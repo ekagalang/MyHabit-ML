@@ -42,4 +42,12 @@ interface HabitDao {
     @Transaction
     @Query("SELECT * FROM habits WHERE isActive = 1 ORDER BY createdAt DESC")
     suspend fun getAllHabitsWithCheckIns(): List<HabitWithCheckIns>
+
+    // Add these methods to HabitDao interface:
+
+    @Query("SELECT * FROM habits WHERE isActive = 1 ORDER BY createdAt DESC")
+    fun getAllHabitsSync(): List<Habit>
+
+    @Query("SELECT * FROM habits WHERE id = :habitId")
+    fun getHabitByIdSync(habitId: Long): Habit?
 }

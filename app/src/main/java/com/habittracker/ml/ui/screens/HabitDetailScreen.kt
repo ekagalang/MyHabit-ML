@@ -32,20 +32,26 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.habittracker.ml.data.local.entities.CheckIn
 import com.habittracker.ml.data.local.entities.Habit
+import com.habittracker.ml.data.local.entities.HabitWithCheckIns
+import com.habittracker.ml.ml.HabitPredictor
+import com.habittracker.ml.ml.models.AdvancedPrediction
 import com.habittracker.ml.ui.theme.*
 import com.habittracker.ml.utils.DateUtils
 import com.habittracker.ml.utils.StreakCalculator
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.roundToInt
 
 @Composable
 fun HabitDetailScreen(
     habitId: Long,
     onNavigateBack: () -> Unit = {},
     onNavigateToEdit: () -> Unit = {},
+    onNavigateToPredictions: (Long) -> Unit = {},
     viewModel: HomeViewModel = viewModel()
 ) {
     var habit by remember { mutableStateOf<Habit?>(null) }
+    var habitWithCheckIns by remember { mutableStateOf<HabitWithCheckIns?>(null) }
     var checkIns by remember { mutableStateOf<List<CheckIn>>(emptyList()) }
     var currentStreak by remember { mutableStateOf(0) }
     var longestStreak by remember { mutableStateOf(0) }
@@ -53,25 +59,33 @@ fun HabitDetailScreen(
     var completionRate by remember { mutableStateOf(0f) }
     var isCheckedInToday by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var mlPrediction by remember { mutableStateOf<AdvancedPrediction?>(null) }
 
     val uiState by viewModel.uiState.collectAsState()
 
     // Load data
     LaunchedEffect(habitId, uiState.todayCheckIns) {
-        val habitWithCheckIns = viewModel.getHabitWithCheckIns(habitId)
-        if (habitWithCheckIns != null) {
-            habit = habitWithCheckIns.habit
-            checkIns = habitWithCheckIns.checkIns.sortedByDescending { it.timestamp }
-            currentStreak = StreakCalculator.calculateCurrentStreak(habitWithCheckIns.checkIns)
-            longestStreak = StreakCalculator.calculateLongestStreak(habitWithCheckIns.checkIns)
-            totalCheckIns = habitWithCheckIns.checkIns.size
+        val data = viewModel.getHabitWithCheckIns(habitId)
+        if (data != null) {
+            habitWithCheckIns = data
+            habit = data.habit
+            checkIns = data.checkIns.sortedByDescending { it.timestamp }
+            currentStreak = StreakCalculator.calculateCurrentStreak(data.checkIns)
+            longestStreak = StreakCalculator.calculateLongestStreak(data.checkIns)
+            totalCheckIns = data.checkIns.size
             completionRate = StreakCalculator.calculateCompletionRate(
-                habitWithCheckIns.checkIns,
-                habitWithCheckIns.habit.targetFrequency,
+                data.checkIns,
+                data.habit.targetFrequency,
                 30
             )
             val today = DateUtils.getCurrentDate()
-            isCheckedInToday = habitWithCheckIns.checkIns.any { it.date == today }
+            isCheckedInToday = data.checkIns.any { it.date == today }
+
+            // Generate ML prediction
+            if (data.checkIns.isNotEmpty()) {
+                val predictor = HabitPredictor()
+                mlPrediction = predictor.analyzeHabitAdvanced(data)
+            }
         }
     }
 
@@ -156,7 +170,9 @@ fun HabitDetailScreen(
             item {
                 FutureSelfCard(
                     currentStreak = currentStreak,
-                    completionRate = completionRate
+                    completionRate = completionRate,
+                    mlPrediction = mlPrediction,
+                    onNavigateToPredictions = { onNavigateToPredictions(habitId) }
                 )
             }
 
@@ -389,15 +405,44 @@ fun HabitInfoCard(
 @Composable
 fun FutureSelfCard(
     currentStreak: Int,
-    completionRate: Float
+    completionRate: Float,
+    mlPrediction: AdvancedPrediction?,
+    onNavigateToPredictions: () -> Unit
 ) {
-    val prediction = (completionRate * 100).toInt()
-    val targetLevel = when {
-        prediction >= 90 -> "Master"
-        prediction >= 70 -> "Expert"
-        prediction >= 50 -> "Proficient"
-        else -> "Beginner"
+    // Use ML prediction if available, fallback to basic calculation
+    val successScore = mlPrediction?.overallSuccessScore?.roundToInt() ?: (completionRate * 100).toInt()
+
+    val scoreColor = when {
+        successScore >= 80 -> Color(0xFF10B981)
+        successScore >= 60 -> Color(0xFFF59E0B)
+        successScore >= 40 -> Color(0xFFEC4899)
+        else -> Color(0xFFEF4444)
     }
+
+    val statusText = when {
+        successScore >= 80 -> "🔥 Mastery Level"
+        successScore >= 60 -> "💪 Strong Performer"
+        successScore >= 40 -> "📈 Building Momentum"
+        else -> "🌱 Getting Started"
+    }
+
+    // Get key insights from ML
+    val topInsight = mlPrediction?.let {
+        when {
+            it.moodCorrelation.hasData && it.moodCorrelation.bestMood != null -> {
+                val emoji = when (it.moodCorrelation.bestMood) {
+                    "very_happy" -> "😄"
+                    "happy" -> "😊"
+                    else -> "😐"
+                }
+                "Best when $emoji • ${it.timeCorrelation.optimalTimeWindow ?: "Track more data"}"
+            }
+            it.timeCorrelation.hasData && it.timeCorrelation.punctualityScore > 80f -> {
+                "⏰ ${it.timeCorrelation.punctualityScore.roundToInt()}% punctual"
+            }
+            else -> "Keep tracking to unlock more insights"
+        }
+    } ?: "AI learning your patterns..."
 
     Surface(
         modifier = Modifier
@@ -416,7 +461,7 @@ fun FutureSelfCard(
                     .background(
                         brush = Brush.radialGradient(
                             colors = listOf(
-                                Primary.copy(alpha = 0.3f),
+                                scoreColor.copy(alpha = 0.3f),
                                 Color.Transparent
                             )
                         ),
@@ -448,7 +493,7 @@ fun FutureSelfCard(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = Primary.copy(alpha = 0.2f)
+                        color = scoreColor.copy(alpha = 0.2f)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -456,16 +501,16 @@ fun FutureSelfCard(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Lightbulb,
-                                contentDescription = "Insight",
-                                tint = Primary,
+                                imageVector = Icons.Default.Psychology,
+                                contentDescription = "ML Insight",
+                                tint = scoreColor,
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
-                                text = "INSIGHT",
+                                text = "ML INSIGHT",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Primary,
+                                color = scoreColor,
                                 letterSpacing = 1.sp
                             )
                         }
@@ -474,32 +519,78 @@ fun FutureSelfCard(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = "Future Self",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Success Score Badge
+                    Surface(
+                        shape = CircleShape,
+                        color = scoreColor.copy(alpha = 0.2f),
+                        modifier = Modifier.size(56.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "$successScore",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Black,
+                                color = scoreColor
+                            )
+                        }
+                    }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                    Column {
+                        Text(
+                            text = "Future Self Prediction",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = statusText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                    }
+                }
 
-                Text(
-                    text = "Based on your current streak, you are $prediction% likely to hit $targetLevel status by next Friday.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.8f),
-                    lineHeight = 20.sp
-                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // ML Insight Summary
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.White.copy(alpha = 0.1f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.8f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = topInsight,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.9f),
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 TextButton(
-                    onClick = { /* TODO: Navigate to detailed predictions */ },
+                    onClick = onNavigateToPredictions,
                     colors = ButtonDefaults.textButtonColors(
-                        contentColor = Primary
+                        contentColor = scoreColor
                     )
                 ) {
                     Text(
-                        text = "View Prediction Details",
+                        text = "View Detailed ML Analysis",
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.width(4.dp))

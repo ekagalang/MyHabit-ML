@@ -6,7 +6,8 @@
       "Bash(./gradlew :app:dependencies:*)",
       "Bash(./gradlew build:*)",
       "Bash(adb logcat:*)",
-      "Bash(./gradlew assembleDebug:*)"
+      "Bash(./gradlew assembleDebug:*)",
+      "Bash(python:*)"
     ]
   }
 }

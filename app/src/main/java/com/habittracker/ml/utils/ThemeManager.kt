@@ -3,6 +3,8 @@ package com.habittracker.ml.utils
 import android.content.Context
 import android.content.res.Configuration
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 
 object ThemeManager {
 
@@ -12,6 +14,8 @@ object ThemeManager {
     const val MODE_LIGHT = 0
     const val MODE_DARK = 1
     const val MODE_SYSTEM = 2
+    private val _themeModeState = mutableStateOf(MODE_SYSTEM)
+    val themeModeState: State<Int> get() = _themeModeState
 
     fun applyTheme(mode: Int) {
         when (mode) {
@@ -24,12 +28,15 @@ object ThemeManager {
     fun saveThemeMode(context: Context, mode: Int) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putInt(KEY_THEME_MODE, mode).apply()
+        _themeModeState.value = mode
         applyTheme(mode)
     }
 
     fun getThemeMode(context: Context): Int {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getInt(KEY_THEME_MODE, MODE_SYSTEM)
+        val mode = prefs.getInt(KEY_THEME_MODE, MODE_SYSTEM)
+        _themeModeState.value = mode
+        return mode
     }
 
     fun isDarkModeActive(context: Context): Boolean {
@@ -43,5 +50,10 @@ object ThemeManager {
             }
             else -> false
         }
+    }
+
+    fun isSystemDark(context: Context): Boolean {
+        val nightModeFlags = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        return nightModeFlags == Configuration.UI_MODE_NIGHT_YES
     }
 }

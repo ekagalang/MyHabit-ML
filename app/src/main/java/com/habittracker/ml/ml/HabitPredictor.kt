@@ -2,10 +2,14 @@ package com.habittracker.ml.ml
 
 import com.habittracker.ml.data.local.entities.CheckIn
 import com.habittracker.ml.data.local.entities.HabitWithCheckIns
+import com.habittracker.ml.ml.models.AdvancedPrediction
 import com.habittracker.ml.ml.models.BestTimeRecommendation
+import com.habittracker.ml.ml.models.ContextualInsight
 import com.habittracker.ml.ml.models.FutureSelfPrediction
 import com.habittracker.ml.ml.models.HabitCorrelation
 import com.habittracker.ml.ml.models.HabitPrediction
+import com.habittracker.ml.ml.models.MoodCorrelation
+import com.habittracker.ml.ml.models.TimeCorrelation
 import com.habittracker.ml.utils.StreakCalculator
 import kotlin.math.roundToInt
 
@@ -295,6 +299,233 @@ class HabitPredictor {
             ((d2 - d1) / (1000 * 60 * 60 * 24)).toInt()
         } catch (e: Exception) {
             1
+        }
+    }
+
+    /**
+     * Advanced analysis with mood, timing, and context
+     */
+    fun analyzeHabitAdvanced(habitData: HabitWithCheckIns): AdvancedPrediction {
+        return AdvancedPrediction(
+            habitId = habitData.habit.id,
+            habitName = habitData.habit.name,
+            moodCorrelation = analyzeMoodImpact(habitData.checkIns),
+            timeCorrelation = analyzeTimeImpact(habitData),
+            contextualInsights = analyzeContextualFactors(habitData.checkIns),
+            optimalConditions = findOptimalConditions(habitData.checkIns),
+            riskFactors = identifyRiskFactors(habitData),
+            overallSuccessScore = calculateAdvancedScore(habitData),
+            recommendation = generateAdvancedRecommendation(habitData)
+        )
+    }
+
+    private fun analyzeMoodImpact(checkIns: List<CheckIn>): MoodCorrelation {
+        val withMood = checkIns.filter { !it.mood.isNullOrBlank() }
+
+        if (withMood.isEmpty()) {
+            return MoodCorrelation(false, null, null, emptyMap(), "Track mood to discover patterns! 😊")
+        }
+
+        val rates = withMood.mapNotNull { it.mood }
+            .groupBy { it }
+            .mapValues { (_, list) -> list.size.toFloat() / withMood.size * 100f }
+
+        val best = rates.maxByOrNull { it.value }
+        val worst = rates.minByOrNull { it.value }
+
+        val insight = when {
+            best != null && best.value > 30f ->
+                "${String.format("%.0f", best.value)}% success when ${getMoodEmoji(best.key)}. Schedule during happy times!"
+            worst != null && worst.value < 10f ->
+                "Struggles when ${getMoodEmoji(worst.key)}. Be gentle on those days."
+            else -> "Mood affects this habit. Keep tracking!"
+        }
+
+        return MoodCorrelation(true, best?.key, worst?.key, rates, insight)
+    }
+
+    private fun analyzeTimeImpact(habitData: HabitWithCheckIns): TimeCorrelation {
+        val checkIns = habitData.checkIns
+        if (checkIns.isEmpty()) {
+            return TimeCorrelation(false, null, 0f, 0, 100f, "Track times to optimize schedule! ⏰")
+        }
+
+        val lateCount = checkIns.count { it.isLate }
+        val lateRate = lateCount.toFloat() / checkIns.size * 100f
+        val avgDelay = checkIns.sumOf { it.minutesLate } / checkIns.size
+        val punctuality = ((checkIns.size - lateCount).toFloat() / checkIns.size) * 100f
+
+        val timeGroups = checkIns.groupBy { getTimeCategory(it.completedAt) }
+            .mapValues { it.value.size }
+        val optimal = timeGroups.maxByOrNull { it.value }?.key
+
+        val insight = when {
+            punctuality > 80f -> "Excellent! ${String.format("%.0f", punctuality)}% punctual 🎯"
+            lateRate > 50f -> "Late ${String.format("%.0f", lateRate)}% - try earlier reminders"
+            avgDelay > 60 -> "Avg ${avgDelay}min late. Try $optimal instead."
+            else -> "Try $optimal for best consistency"
+        }
+
+        return TimeCorrelation(true, optimal, lateRate, avgDelay, punctuality, insight)
+    }
+
+    private fun analyzeContextualFactors(checkIns: List<CheckIn>): List<ContextualInsight> {
+        val insights = mutableListOf<ContextualInsight>()
+
+        // Energy
+        val energy = checkIns.filter { it.energyLevel != null }
+        if (energy.isNotEmpty()) {
+            val avg = energy.mapNotNull { it.energyLevel }.average()
+            val high = energy.count { (it.energyLevel ?: 0) >= 4 }
+            val rate = high.toFloat() / energy.size * 100f
+
+            insights.add(ContextualInsight(
+                "energy", "Energy Level",
+                if (avg >= 3.5) "positive" else "negative",
+                rate,
+                when {
+                    avg >= 4.0 -> "High energy = success! ⚡"
+                    avg >= 3.0 -> "Moderate energy works well"
+                    else -> "Low energy hurts consistency"
+                }
+            ))
+        }
+
+        // Stress
+        val stress = checkIns.filter { it.stressLevel != null }
+        if (stress.isNotEmpty()) {
+            val avg = stress.mapNotNull { it.stressLevel }.average()
+            val low = stress.count { (it.stressLevel ?: 5) <= 2 }
+            val rate = low.toFloat() / stress.size * 100f
+
+            insights.add(ContextualInsight(
+                "stress", "Stress Level",
+                if (avg <= 2.5) "positive" else "negative",
+                rate,
+                when {
+                    avg <= 2.0 -> "Low stress boosts consistency 😌"
+                    avg <= 3.5 -> "Resilient despite stress!"
+                    else -> "Stress disrupts this habit"
+                }
+            ))
+        }
+
+        // Location
+        val loc = checkIns.filter { !it.location.isNullOrBlank() }
+        if (loc.isNotEmpty()) {
+            val best = loc.groupBy { it.location }.mapValues { it.value.size }.maxByOrNull { it.value }
+            best?.let {
+                val rate = it.value.toFloat() / loc.size * 100f
+                insights.add(ContextualInsight(
+                    "location", "Location", "positive", rate,
+                    "Most successful at ${it.key} (${String.format("%.0f", rate)}%) 📍"
+                ))
+            }
+        }
+
+        return insights
+    }
+
+    private fun findOptimalConditions(checkIns: List<CheckIn>): Map<String, String> {
+        val conditions = mutableMapOf<String, String>()
+
+        checkIns.filter { !it.mood.isNullOrBlank() }
+            .groupBy { it.mood }.mapValues { it.value.size }.maxByOrNull { it.value }
+            ?.let { conditions["Mood"] = "${getMoodEmoji(it.key)} ${it.key?.replace("_", " ")}" }
+
+        checkIns.groupBy { getTimeCategory(it.completedAt) }
+            .mapValues { it.value.size }.maxByOrNull { it.value }
+            ?.let { conditions["Time"] = it.key }
+
+        val highEnergy = checkIns.count { (it.energyLevel ?: 0) >= 4 }
+        if (highEnergy > 0) conditions["Energy"] = "High (4-5)"
+
+        val lowStress = checkIns.count { (it.stressLevel ?: 5) <= 2 }
+        if (lowStress > 0) conditions["Stress"] = "Low (1-2)"
+
+        return conditions
+    }
+
+    private fun identifyRiskFactors(habitData: HabitWithCheckIns): List<String> {
+        val risks = mutableListOf<String>()
+        val checkIns = habitData.checkIns
+
+        if (checkIns.isEmpty()) return risks
+
+        val lateRate = checkIns.count { it.isLate }.toFloat() / checkIns.size
+        if (lateRate > 0.5f) risks.add("⚠️ Late ${String.format("%.0f", lateRate * 100f)}% - earlier reminders")
+
+        val lowEnergy = checkIns.count { (it.energyLevel ?: 3) <= 2 }.toFloat() / checkIns.size
+        if (lowEnergy > 0.4f) risks.add("⚠️ Low energy affects this - try after rest")
+
+        val highStress = checkIns.count { (it.stressLevel ?: 3) >= 4 }.toFloat() / checkIns.size
+        if (highStress > 0.4f) risks.add("⚠️ Stress disrupts this - manage stress first")
+
+        return risks
+    }
+
+    private fun calculateAdvancedScore(habitData: HabitWithCheckIns): Float {
+        val checkIns = habitData.checkIns
+        if (checkIns.isEmpty()) return 0f
+
+        var score = 0f
+        val punctual = checkIns.count { !it.isLate }.toFloat() / checkIns.size * 25f
+        score += punctual
+
+        val positive = checkIns.count { it.mood in listOf("happy", "very_happy") }
+        if (positive > 0) score += positive.toFloat() / checkIns.size * 25f
+
+        val highEnergy = checkIns.count { (it.energyLevel ?: 0) >= 4 }
+        if (highEnergy > 0) score += highEnergy.toFloat() / checkIns.size * 25f
+
+        score += calculateConsistency(habitData) * 25f
+
+        return score.coerceIn(0f, 100f)
+    }
+
+    private fun generateAdvancedRecommendation(habitData: HabitWithCheckIns): String {
+        val rec = mutableListOf<String>()
+        val mood = analyzeMoodImpact(habitData.checkIns)
+        val time = analyzeTimeImpact(habitData)
+
+        if (mood.hasData && mood.bestMood != null) {
+            rec.add("✨ Best when ${getMoodEmoji(mood.bestMood)}")
+        }
+        if (time.hasData && time.optimalTimeWindow != null) {
+            rec.add("⏰ ${time.optimalTimeWindow}")
+        }
+
+        val risks = identifyRiskFactors(habitData)
+        if (risks.isNotEmpty()) rec.add(risks.first())
+
+        return rec.joinToString("\n").ifEmpty { "Keep tracking! 📊" }
+    }
+
+    private fun getTimeCategory(time: String): String {
+        return try {
+            val hour = time.split(":")[0].toInt()
+            when {
+                hour in 5..8 -> "Early Morning (5-8 AM)"
+                hour in 9..11 -> "Late Morning (9-11 AM)"
+                hour in 12..14 -> "Afternoon (12-2 PM)"
+                hour in 15..17 -> "Late Afternoon (3-5 PM)"
+                hour in 18..20 -> "Evening (6-8 PM)"
+                hour in 21..23 -> "Night (9-11 PM)"
+                else -> "Late Night"
+            }
+        } catch (e: Exception) {
+            "Unknown"
+        }
+    }
+
+    private fun getMoodEmoji(mood: String?): String {
+        return when (mood) {
+            "very_happy" -> "😄"
+            "happy" -> "😊"
+            "neutral" -> "😐"
+            "sad" -> "😢"
+            "very_sad" -> "😭"
+            else -> "😐"
         }
     }
 }
