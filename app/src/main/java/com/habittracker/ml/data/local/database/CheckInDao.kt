@@ -40,10 +40,10 @@ interface CheckInDao {
     fun getCheckInByDateSync(habitId: Long, date: String): CheckIn?
 
     @Query("""
-        SELECT * FROM check_ins 
-        WHERE habitId = :habitId 
-        AND date >= :startDate 
-        AND date <= :endDate 
+        SELECT * FROM check_ins
+        WHERE habitId = :habitId
+        AND date >= :startDate
+        AND date <= :endDate
         ORDER BY date ASC
     """)
     suspend fun getCheckInsBetweenDates(
@@ -51,4 +51,14 @@ interface CheckInDao {
         startDate: String,
         endDate: String
     ): List<CheckIn>
+
+    // Sync-related queries
+    @Query("SELECT * FROM check_ins WHERE isSynced = 0")
+    suspend fun getUnsyncedCheckIns(): List<CheckIn>
+
+    @Query("UPDATE check_ins SET serverId = :serverId, isSynced = 1 WHERE id = :localId")
+    suspend fun updateServerMapping(localId: Long, serverId: Long)
+
+    @Query("SELECT * FROM check_ins WHERE serverId = :serverId LIMIT 1")
+    suspend fun getCheckInByServerId(serverId: Long): CheckIn?
 }

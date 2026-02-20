@@ -22,6 +22,8 @@ import com.habittracker.ml.ui.screens.ManageTemplatesScreen
 import com.habittracker.ml.ui.screens.EditTemplateScreen
 import com.habittracker.ml.ui.screens.NotificationCenterScreen
 import com.habittracker.ml.ui.screens.PredictionDetailsScreen
+import com.habittracker.ml.ui.screens.LoginScreen
+import com.habittracker.ml.ui.screens.RegisterScreen
 import com.habittracker.ml.data.local.entities.HabitTemplate
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
@@ -33,7 +35,7 @@ fun NavGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Home.route,
+        startDestination = startDestination,
         enterTransition = {
             slideIntoContainer(
                 towards = AnimatedContentTransitionScope.SlideDirection.Left,
@@ -59,6 +61,36 @@ fun NavGraph(
             ) + fadeOut(animationSpec = tween(300))
         }
     ) {
+        // Auth screens
+        composable(Screen.Login.route) {
+            LoginScreen(
+                onNavigateToRegister = {
+                    navController.navigate(Screen.Register.route)
+                },
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                onSkipLogin = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Screen.Register.route) {
+            RegisterScreen(
+                onNavigateBack = { navController.navigateUp() },
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable(Screen.Home.route) {
             HomeScreen(
                 onNavigateToAddHabit = {
@@ -101,7 +133,13 @@ fun NavGraph(
         composable(Screen.Profile.route) {
             ProfileScreen(
                 onNavigateBack = { navController.navigateUp() },
-                onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
+                onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.id) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 
@@ -117,7 +155,13 @@ fun NavGraph(
                 onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
                 onNavigateToCategories = { navController.navigate(Screen.Categories.route) },
                 onNavigateToBackup = { navController.navigate(Screen.Backup.route) },
-                onNavigateToManageTemplates = { navController.navigate(Screen.ManageTemplates.route) }
+                onNavigateToManageTemplates = { navController.navigate(Screen.ManageTemplates.route) },
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.id) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 

@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 
 @Database(
     entities = [Habit::class, CheckIn::class, Prediction::class, HabitTemplate::class],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class HabitDatabase : RoomDatabase() {
@@ -38,7 +38,7 @@ abstract class HabitDatabase : RoomDatabase() {
                     HabitDatabase::class.java,
                     "habit_database"
                 )
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .fallbackToDestructiveMigration()
                     .addCallback(HabitDatabaseCallback(context))
                     .build()
@@ -110,6 +110,18 @@ abstract class HabitDatabase : RoomDatabase() {
                 database.execSQL("ALTER TABLE check_ins ADD COLUMN stressLevel INTEGER")
                 database.execSQL("ALTER TABLE check_ins ADD COLUMN location TEXT")
                 database.execSQL("ALTER TABLE check_ins ADD COLUMN weather TEXT")
+            }
+        }
+
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add server sync columns to habits
+                database.execSQL("ALTER TABLE habits ADD COLUMN serverId INTEGER")
+                database.execSQL("ALTER TABLE habits ADD COLUMN isSynced INTEGER NOT NULL DEFAULT 0")
+
+                // Add server sync columns to check_ins
+                database.execSQL("ALTER TABLE check_ins ADD COLUMN serverId INTEGER")
+                database.execSQL("ALTER TABLE check_ins ADD COLUMN isSynced INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

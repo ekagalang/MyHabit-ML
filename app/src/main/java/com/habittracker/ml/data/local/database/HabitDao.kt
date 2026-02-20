@@ -50,4 +50,17 @@ interface HabitDao {
 
     @Query("SELECT * FROM habits WHERE id = :habitId")
     fun getHabitByIdSync(habitId: Long): Habit?
+
+    // Sync-related queries
+    @Query("SELECT * FROM habits WHERE isSynced = 0 AND isActive = 1")
+    suspend fun getUnsyncedHabits(): List<Habit>
+
+    @Query("UPDATE habits SET serverId = :serverId, isSynced = 1 WHERE id = :localId")
+    suspend fun updateServerMapping(localId: Long, serverId: Long)
+
+    @Query("SELECT * FROM habits WHERE serverId = :serverId LIMIT 1")
+    suspend fun getHabitByServerId(serverId: Long): Habit?
+
+    @Query("SELECT * FROM habits ORDER BY createdAt DESC")
+    suspend fun getAllHabitsIncludingInactive(): List<Habit>
 }

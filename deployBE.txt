@@ -1,0 +1,408 @@
+📁 Struktur Project
+
+  backend/
+  ├── cmd/api/              # Application entry point
+  │   ├── main.go          # Main server
+  │   └── routes.go        # API routes
+  ├── internal/
+  │   ├── config/          # Configuration
+  │   ├── database/        # Database connection & migrations
+  │   ├── handlers/        # API handlers
+  │   │   ├── auth.go     # Authentication
+  │   │   ├── habit.go    # Habits CRUD
+  │   │   ├── checkin.go  # Check-ins
+  │   │   ├── sync.go     # Data sync
+  │   │   └── template.go # Templates
+  │   ├── middleware/      # Auth & CORS
+  │   ├── models/         # Data models
+  │   └── utils/          # JWT & helpers
+  ├── .env.example
+  ├── go.mod
+  ├── README.md
+  ├── DEPLOYMENT.md
+  ├── Makefile
+  └── POSTMAN_COLLECTION.json
+
+  🚀 Fitur Lengkap
+
+  1. Authentication
+  - ✅ Register user baru
+  - ✅ Login dengan JWT token
+  - ✅ Get user profile
+  - ✅ Change password
+  - ✅ Password hashing dengan bcrypt
+  - ✅ JWT middleware untuk protected routes
+
+  2. Habits Management
+  - ✅ Create habit
+  - ✅ Get all habits (with optional check-ins)
+  - ✅ Get single habit
+  - ✅ Update habit
+  - ✅ Delete habit (soft delete)
+  - ✅ Get habit statistics
+
+  3. Check-ins Tracking
+  - ✅ Create check-in
+  - ✅ Bulk create check-ins
+  - ✅ Get check-ins (filter by habit, date)
+  - ✅ Delete check-in
+  - ✅ Advanced tracking (mood, energy, stress, location, weather)
+
+  4. Data Sync
+  - ✅ Upload data from mobile app
+  - ✅ Download all user data
+  - ✅ Sync habits and check-ins
+  - ✅ Export data format compatible with app
+
+  5. Habit Templates
+  - ✅ System templates (pre-seeded)
+  - ✅ Custom user templates
+  - ✅ CRUD operations
+
+  🗄️ Database Models
+
+  MySQL dengan GORM:
+  - users           - User accounts
+  - habits          - User habits
+  - check_ins       - Daily completions
+  - habit_templates - System & custom templates
+
+  Features:
+  - Auto migrations
+  - Foreign keys & cascading deletes
+  - Soft deletes
+  - Indexes for performance
+  - charset=utf8mb4 (full Unicode & emoji support)
+
+  🔐 Security
+
+  - ✅ JWT authentication
+  - ✅ Password hashing (bcrypt)
+  - ✅ CORS configuration
+  - ✅ SQL injection protection (GORM)
+  - ✅ Environment variables
+  - ✅ Middleware authentication
+
+  📡 API Endpoints
+
+  Authentication:
+  - POST /api/auth/register         - Register
+  - POST /api/auth/login            - Login
+  - GET  /api/auth/profile          - Get profile
+  - PUT  /api/auth/change-password  - Change password
+
+  Habits:
+  - GET    /api/habits          - List habits
+  - GET    /api/habits/:id      - Get habit
+  - POST   /api/habits          - Create habit
+  - PUT    /api/habits/:id      - Update habit
+  - DELETE /api/habits/:id      - Delete habit
+  - GET    /api/habits/:id/stats - Get stats
+
+  Check-ins:
+  - GET    /api/checkins       - List check-ins
+  - POST   /api/checkins       - Create check-in
+  - POST   /api/checkins/bulk  - Bulk create
+  - DELETE /api/checkins/:id   - Delete
+
+  Sync:
+  - GET  /api/sync - Download all data
+  - POST /api/sync - Upload from mobile
+
+  Templates:
+  - GET    /api/templates      - List templates
+  - POST   /api/templates      - Create custom
+  - DELETE /api/templates/:id  - Delete
+
+  🏃 Cara Menjalankan (Local):
+
+  1. Setup MySQL
+
+  # Pastikan MySQL sudah terinstall dan berjalan
+  # Login ke MySQL
+  mysql -u root -p
+
+  # Buat database
+  CREATE DATABASE myhabit_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+  EXIT;
+
+  2. Install Dependencies
+
+  cd backend
+  go mod download
+
+  3. Configure Environment
+
+  cp .env.example .env
+  # Edit .env dengan kredensial MySQL Anda:
+  #
+  # DB_HOST=localhost
+  # DB_PORT=3306
+  # DB_USER=root
+  # DB_PASSWORD=your_password
+  # DB_NAME=myhabit_db
+  # JWT_SECRET=your-super-secret-key
+
+  4. Run Server
+
+  # Development
+  make dev
+
+  # Atau langsung
+  go run cmd/api/main.go
+
+  Server akan jalan di http://localhost:8080
+  Tabel akan dibuat otomatis oleh GORM AutoMigrate.
+
+  5. Test API
+
+  Import POSTMAN_COLLECTION.json ke Postman untuk testing!
+
+  ─────────────────────────────────────────────────────────────
+  ☁️  DEPLOY KE VPS / SERVER (Production)
+  ─────────────────────────────────────────────────────────────
+
+  1. Install Go & MySQL di Server
+
+  # Install Go
+  wget https://go.dev/dl/go1.21.0.linux-amd64.tar.gz
+  tar -C /usr/local -xzf go1.21.0.linux-amd64.tar.gz
+  echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+  source ~/.bashrc
+
+  # Install MySQL
+  sudo apt update
+  sudo apt install mysql-server -y
+  sudo systemctl start mysql
+  sudo systemctl enable mysql
+
+  # Amankan MySQL
+  sudo mysql_secure_installation
+
+  2. Setup Database di Server
+
+  sudo mysql -u root -p
+
+  CREATE DATABASE myhabit_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+  CREATE USER 'myhabit'@'localhost' IDENTIFIED BY 'StrongPassword123!';
+  GRANT ALL PRIVILEGES ON myhabit_db.* TO 'myhabit'@'localhost';
+  FLUSH PRIVILEGES;
+  EXIT;
+
+  3. Upload & Build Backend
+
+  # Upload folder backend ke server (contoh dengan scp)
+  scp -r backend/ user@your-server-ip:/home/user/myhabit-backend
+
+  # Atau clone dari git
+  git clone your-repo /home/user/myhabit-backend
+  cd /home/user/myhabit-backend/backend
+
+  # Build binary
+  go build -o myhabit-server cmd/api/main.go
+
+  4. Buat file .env di Server
+
+  cat > .env << EOF
+  PORT=8080
+  GIN_MODE=release
+  DB_HOST=localhost
+  DB_PORT=3306
+  DB_USER=myhabit
+  DB_PASSWORD=StrongPassword123!
+  DB_NAME=myhabit_db
+  JWT_SECRET=$(openssl rand -base64 32)
+  JWT_EXPIRATION_HOURS=168
+  ALLOWED_ORIGINS=*
+  EOF
+
+  5. Jalankan dengan Systemd (agar auto-restart)
+
+  sudo nano /etc/systemd/system/myhabit.service
+
+  # Isi file:
+  [Unit]
+  Description=MyHabit Backend Server
+  After=network.target mysql.service
+
+  [Service]
+  Type=simple
+  User=www-data
+  WorkingDirectory=/home/user/myhabit-backend/backend
+  ExecStart=/home/user/myhabit-backend/backend/myhabit-server
+  Restart=always
+  RestartSec=5
+  EnvironmentFile=/home/user/myhabit-backend/backend/.env
+
+  [Install]
+  WantedBy=multi-user.target
+
+  # Aktifkan service
+  sudo systemctl daemon-reload
+  sudo systemctl enable myhabit
+  sudo systemctl start myhabit
+  sudo systemctl status myhabit
+
+  ─────────────────────────────────────────────────────────────
+  🐳 DEPLOY DENGAN DOCKER
+  ─────────────────────────────────────────────────────────────
+
+  1. Buat Dockerfile di folder backend/
+
+  cat > Dockerfile << 'EOF'
+  FROM golang:1.21-alpine AS builder
+  WORKDIR /app
+  COPY go.mod go.sum ./
+  RUN go mod download
+  COPY . .
+  RUN go build -o myhabit-server cmd/api/main.go
+
+  FROM alpine:latest
+  RUN apk --no-cache add ca-certificates tzdata
+  WORKDIR /app
+  COPY --from=builder /app/myhabit-server .
+  EXPOSE 8080
+  CMD ["./myhabit-server"]
+  EOF
+
+  2. Buat docker-compose.yml
+
+  cat > docker-compose.yml << 'EOF'
+  version: '3.8'
+  services:
+    db:
+      image: mysql:8.0
+      container_name: myhabit_mysql
+      environment:
+        MYSQL_ROOT_PASSWORD: rootpassword
+        MYSQL_DATABASE: myhabit_db
+        MYSQL_USER: myhabit
+        MYSQL_PASSWORD: myhabitpass
+      volumes:
+        - mysql_data:/var/lib/mysql
+      ports:
+        - "3306:3306"
+      command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+      healthcheck:
+        test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+
+    app:
+      build: .
+      container_name: myhabit_backend
+      depends_on:
+        db:
+          condition: service_healthy
+      environment:
+        PORT: 8080
+        GIN_MODE: release
+        DB_HOST: db
+        DB_PORT: 3306
+        DB_USER: myhabit
+        DB_PASSWORD: myhabitpass
+        DB_NAME: myhabit_db
+        JWT_SECRET: your-super-secret-jwt-key-change-this
+        JWT_EXPIRATION_HOURS: 168
+        ALLOWED_ORIGINS: "*"
+      ports:
+        - "8080:8080"
+      restart: always
+
+  volumes:
+    mysql_data:
+  EOF
+
+  3. Jalankan Docker Compose
+
+  docker-compose up -d
+
+  # Cek status
+  docker-compose ps
+  docker-compose logs -f app
+
+  # Stop
+  docker-compose down
+
+  ─────────────────────────────────────────────────────────────
+  ☁️  DEPLOY KE RAILWAY (Gratis & Mudah)
+  ─────────────────────────────────────────────────────────────
+
+  1. Push code ke GitHub
+  2. Buka https://railway.app
+  3. New Project → Deploy from GitHub repo
+  4. Tambah service MySQL:
+     - Add Service → Database → MySQL
+     - Salin connection string yang diberikan Railway
+  5. Set environment variables di Settings → Variables:
+     DB_HOST     = (dari Railway MySQL)
+     DB_PORT     = 3306
+     DB_USER     = (dari Railway MySQL)
+     DB_PASSWORD = (dari Railway MySQL)
+     DB_NAME     = railway
+     GIN_MODE    = release
+     JWT_SECRET  = your-secret-key
+  6. Deploy otomatis!
+
+  ─────────────────────────────────────────────────────────────
+  ☁️  DEPLOY KE RENDER (Gratis)
+  ─────────────────────────────────────────────────────────────
+
+  1. Push code ke GitHub
+  2. Buka https://render.com
+  3. New → Web Service → Connect GitHub repo
+  4. Settings:
+     - Runtime: Go
+     - Build Command: go build -o server cmd/api/main.go
+     - Start Command: ./server
+  5. Tambah MySQL database:
+     - New → MySQL (atau gunakan PlanetScale.com gratis)
+  6. Set environment variables (sama seperti Railway)
+  7. Deploy!
+
+  ─────────────────────────────────────────────────────────────
+  📱 Update URL di Android App
+  ─────────────────────────────────────────────────────────────
+
+  Setelah deploy, update BASE_URL di:
+  app/src/main/java/com/habittracker/ml/data/remote/ApiClient.kt
+
+  // Emulator Android (local)
+  private const val BASE_URL = "http://10.0.2.2:8080/"
+
+  // Device fisik (local, ganti dengan IP komputer)
+  private const val BASE_URL = "http://192.168.1.xxx:8080/"
+
+  // Production server
+  private const val BASE_URL = "https://your-domain.com/"
+
+  ─────────────────────────────────────────────────────────────
+
+  📚 Documentation Files:
+
+  1. README.md           - Complete API documentation
+  2. DEPLOYMENT.md       - Deployment guides lengkap
+  3. POSTMAN_COLLECTION.json - Ready-to-use Postman collection
+  4. Makefile            - Build automation commands
+
+  🔧 Technologies Used:
+
+  - Go 1.21+      - Programming language
+  - Gin Framework - Web framework
+  - GORM          - ORM for database
+  - MySQL 8.0     - Database
+  - JWT           - Authentication
+  - Bcrypt        - Password hashing
+
+  🎯 Quick Start Checklist:
+
+  [ ] Install MySQL dan buat database myhabit_db
+  [ ] Copy .env.example ke .env dan isi kredensial
+  [ ] go mod download
+  [ ] go run cmd/api/main.go
+  [ ] Test dengan Postman collection
+  [ ] Update BASE_URL di Android app
+  [ ] Deploy ke server pilihan
+
+  Backend siap untuk production! 🚀

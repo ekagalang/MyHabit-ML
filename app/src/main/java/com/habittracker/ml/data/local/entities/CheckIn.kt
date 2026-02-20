@@ -35,5 +35,9 @@ data class CheckIn(
     val energyLevel: Int? = null, // 1-5 scale
     val stressLevel: Int? = null, // 1-5 scale
     val location: String? = null, // "home", "work", "gym", "outdoor"
-    val weather: String? = null // "sunny", "rainy", "cloudy", "cold"
+    val weather: String? = null, // "sunny", "rainy", "cloudy", "cold"
+
+    // Server sync fields
+    val serverId: Long? = null,
+    val isSynced: Boolean = false
 )
