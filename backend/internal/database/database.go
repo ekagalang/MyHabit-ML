@@ -7,7 +7,7 @@ import (
 	"myhabit-backend/internal/config"
 	"myhabit-backend/internal/models"
 
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -24,7 +24,7 @@ func Connect(cfg *config.Config) error {
 		logLevel = logger.Warn
 	}
 
-	DB, err = gorm.Open(postgres.Open(cfg.GetDSN()), &gorm.Config{
+	DB, err = gorm.Open(mysql.Open(cfg.GetDSN()), &gorm.Config{
 		Logger: logger.Default.LogMode(logLevel),
 	})
 	if err != nil {

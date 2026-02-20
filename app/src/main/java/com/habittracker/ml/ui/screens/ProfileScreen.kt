@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -20,11 +21,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.habittracker.ml.data.local.entities.HabitWithCheckIns
 import com.habittracker.ml.data.local.preferences.AppPreferences
+import com.habittracker.ml.data.local.preferences.AuthPreferences
 import com.habittracker.ml.ui.theme.*
 import com.habittracker.ml.utils.StreakCalculator
 import java.text.SimpleDateFormat
@@ -34,15 +39,20 @@ import java.util.*
 fun ProfileScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
-    viewModel: HomeViewModel = viewModel()
+    onNavigateToLogin: () -> Unit = {},
+    viewModel: HomeViewModel = viewModel(),
+    authViewModel: AuthViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val authState by authViewModel.uiState.collectAsState()
     val context = LocalContext.current
     val preferences = remember { AppPreferences(context) }
+    val authPreferences = remember { AuthPreferences(context) }
 
     var userName by remember { mutableStateOf(preferences.profileName) }
     var userEmail by remember { mutableStateOf(preferences.profileEmail) }
     var showEditDialog by remember { mutableStateOf(false) }
+    var showChangePasswordDialog by remember { mutableStateOf(false) }
 
     val habitsWithCheckIns by produceState(
         initialValue = emptyList<HabitWithCheckIns>(),
@@ -348,34 +358,32 @@ fun ProfileScreen(
                 shadowElevation = 2.dp
             ) {
                 Column {
-                    AccountActionItem(
-                        icon = Icons.Default.Email,
-                        title = "Change Email",
-                        onClick = {
-                            Toast.makeText(context, "Coming soon", Toast.LENGTH_SHORT).show()
-                        }
-                    )
+                    if (authPreferences.isLoggedIn()) {
+                        AccountActionItem(
+                            icon = Icons.Default.Lock,
+                            title = "Change Password",
+                            onClick = { showChangePasswordDialog = true }
+                        )
 
-                    HorizontalDivider(color = BorderLight, modifier = Modifier.padding(horizontal = 16.dp))
+                        HorizontalDivider(color = BorderLight, modifier = Modifier.padding(horizontal = 16.dp))
 
-                    AccountActionItem(
-                        icon = Icons.Default.Lock,
-                        title = "Change Password",
-                        onClick = {
-                            Toast.makeText(context, "Coming soon", Toast.LENGTH_SHORT).show()
-                        }
-                    )
-
-                    HorizontalDivider(color = BorderLight, modifier = Modifier.padding(horizontal = 16.dp))
-
-                    AccountActionItem(
-                        icon = Icons.AutoMirrored.Filled.ExitToApp,
-                        title = "Sign Out",
-                        textColor = AccentError,
-                        onClick = {
-                            Toast.makeText(context, "Signed out", Toast.LENGTH_SHORT).show()
-                        }
-                    )
+                        AccountActionItem(
+                            icon = Icons.AutoMirrored.Filled.ExitToApp,
+                            title = "Sign Out",
+                            textColor = AccentError,
+                            onClick = {
+                                authViewModel.logout()
+                                Toast.makeText(context, "Signed out", Toast.LENGTH_SHORT).show()
+                                onNavigateToLogin()
+                            }
+                        )
+                    } else {
+                        AccountActionItem(
+                            icon = Icons.Default.Login,
+                            title = "Sign In",
+                            onClick = onNavigateToLogin
+                        )
+                    }
                 }
             }
         }
@@ -383,7 +391,6 @@ fun ProfileScreen(
 
     if (showEditDialog) {
         var tempName by remember { mutableStateOf(userName) }
-        var tempEmail by remember { mutableStateOf(userEmail) }
 
         AlertDialog(
             onDismissRequest = { showEditDialog = false },
@@ -402,24 +409,13 @@ fun ProfileScreen(
                         label = { Text("Name") },
                         modifier = Modifier.fillMaxWidth()
                     )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    OutlinedTextField(
-                        value = tempEmail,
-                        onValueChange = { tempEmail = it },
-                        label = { Text("Email") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
                         userName = tempName
-                        userEmail = tempEmail
                         preferences.profileName = tempName
-                        preferences.profileEmail = tempEmail
                         showEditDialog = false
                     }
                 ) {
@@ -433,6 +429,166 @@ fun ProfileScreen(
             }
         )
     }
+
+    if (showChangePasswordDialog) {
+        ChangePasswordDialog(
+            authViewModel = authViewModel,
+            onDismiss = {
+                showChangePasswordDialog = false
+                authViewModel.clearError()
+            },
+            onSuccess = {
+                showChangePasswordDialog = false
+                authViewModel.clearPasswordChangeSuccess()
+                Toast.makeText(context, "Password changed successfully", Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+}
+
+@Composable
+fun ChangePasswordDialog(
+    authViewModel: AuthViewModel,
+    onDismiss: () -> Unit,
+    onSuccess: () -> Unit
+) {
+    val authState by authViewModel.uiState.collectAsState()
+
+    var oldPassword by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var oldPasswordVisible by remember { mutableStateOf(false) }
+    var newPasswordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(authState.passwordChangeSuccess) {
+        if (authState.passwordChangeSuccess) {
+            onSuccess()
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "Change Password",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = oldPassword,
+                    onValueChange = { oldPassword = it },
+                    label = { Text("Current Password") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    visualTransformation = if (oldPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { oldPasswordVisible = !oldPasswordVisible }) {
+                            Icon(
+                                imageVector = if (oldPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = newPassword,
+                    onValueChange = { newPassword = it },
+                    label = { Text("New Password") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    visualTransformation = if (newPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { newPasswordVisible = !newPasswordVisible }) {
+                            Icon(
+                                imageVector = if (newPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = { confirmPassword = it },
+                    label = { Text("Confirm New Password") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                            Icon(
+                                imageVector = if (confirmPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    singleLine = true
+                )
+
+                if (authState.errorMessage != null) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        color = AccentError.copy(alpha = 0.1f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Error,
+                                contentDescription = null,
+                                tint = AccentError,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = authState.errorMessage ?: "",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AccentError
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    authViewModel.changePassword(oldPassword, newPassword, confirmPassword)
+                },
+                enabled = !authState.isChangingPassword
+            ) {
+                if (authState.isChangingPassword) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Change")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable

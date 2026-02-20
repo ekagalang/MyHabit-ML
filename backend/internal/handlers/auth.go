@@ -129,3 +129,50 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 
 	utils.SuccessResponse(c, 200, "Profile retrieved successfully", user)
 }
+
+// ChangePassword godoc
+// @Summary Change user password
+// @Description Change authenticated user's password
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body models.ChangePasswordRequest true "Password change data"
+// @Success 200 {object} utils.Response
+// @Failure 400,401 {object} utils.Response
+// @Router /api/auth/change-password [put]
+func (h *AuthHandler) ChangePassword(c *gin.Context) {
+	userID, _ := c.Get("user_id")
+
+	var req models.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ValidationErrorResponse(c, err)
+		return
+	}
+
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		utils.ErrorResponse(c, 404, "User not found")
+		return
+	}
+
+	// Verify old password
+	if err := user.CheckPassword(req.OldPassword); err != nil {
+		utils.ErrorResponse(c, 401, "Current password is incorrect")
+		return
+	}
+
+	// Set and hash new password
+	user.Password = req.NewPassword
+	if err := user.HashPassword(); err != nil {
+		utils.ErrorResponse(c, 500, "Failed to hash password")
+		return
+	}
+
+	if err := database.DB.Save(&user).Error; err != nil {
+		utils.ErrorResponse(c, 500, "Failed to update password")
+		return
+	}
+
+	utils.SuccessResponse(c, 200, "Password changed successfully", nil)
+}

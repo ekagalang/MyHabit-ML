@@ -38,10 +38,15 @@ import com.habittracker.ml.data.local.database.HabitDatabase
 import com.habittracker.ml.data.local.entities.CheckIn
 import com.habittracker.ml.data.local.entities.Habit
 import com.habittracker.ml.data.local.preferences.AppPreferences
+import com.habittracker.ml.data.local.preferences.AuthPreferences
+import com.habittracker.ml.workers.SyncWorker
 import com.habittracker.ml.ui.theme.*
 import com.habittracker.ml.utils.ThemeManager
 import kotlinx.coroutines.launch
 import android.app.Activity
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private data class ExportPayload(
     val habits: List<Habit>,
@@ -90,10 +95,12 @@ fun SettingsScreen(
     onNavigateToCategories: () -> Unit = {},
     onNavigateToBackup: () -> Unit = {},
     onNavigateToManageTemplates: () -> Unit = {},
+    onNavigateToLogin: () -> Unit = {},
     viewModel: HomeViewModel = viewModel()
 ) {
     val context = LocalContext.current
     val preferences = remember { AppPreferences(context) }
+    val authPreferences = remember { AuthPreferences(context) }
     val scope = rememberCoroutineScope()
     val gson = remember { Gson() }
     val appVersion = remember { getAppVersion(context) }
@@ -222,6 +229,71 @@ fun SettingsScreen(
                 subtitle = preferences.profileEmail,
                 onClick = onNavigateToProfile
             )
+        }
+
+        item { Spacer(modifier = Modifier.height(24.dp)) }
+
+        // Account & Sync Section
+        item {
+            SectionHeader(
+                icon = Icons.Default.Cloud,
+                title = "Account & Sync",
+                iconColor = Color(0xFF3B82F6)
+            )
+        }
+
+        item {
+            SettingsCard {
+                Column {
+                    if (authPreferences.isLoggedIn()) {
+                        SettingItem(
+                            icon = Icons.Default.Person,
+                            title = authPreferences.getUserName(),
+                            subtitle = authPreferences.getUserEmail()
+                        )
+
+                        HorizontalDivider(color = BorderLight, modifier = Modifier.padding(horizontal = 16.dp))
+
+                        val lastSync = authPreferences.getLastSyncTime()
+                        val lastSyncText = if (lastSync > 0) {
+                            SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(lastSync))
+                        } else {
+                            "Never"
+                        }
+
+                        SettingNavigationItem(
+                            icon = Icons.Default.Sync,
+                            title = "Sync Now",
+                            subtitle = "Last sync: $lastSyncText",
+                            onClick = {
+                                SyncWorker.triggerManualSync(context)
+                                Toast.makeText(context, "Syncing...", Toast.LENGTH_SHORT).show()
+                            }
+                        )
+
+                        HorizontalDivider(color = BorderLight, modifier = Modifier.padding(horizontal = 16.dp))
+
+                        SettingNavigationItem(
+                            icon = Icons.Default.Logout,
+                            title = "Logout",
+                            subtitle = "Sign out from your account",
+                            onClick = {
+                                authPreferences.clearAuth()
+                                SyncWorker.cancelPeriodicSync(context)
+                                onNavigateToLogin()
+                            },
+                            textColor = AccentError
+                        )
+                    } else {
+                        SettingNavigationItem(
+                            icon = Icons.Default.Login,
+                            title = "Sign In",
+                            subtitle = "Login to sync your data across devices",
+                            onClick = onNavigateToLogin
+                        )
+                    }
+                }
+            }
         }
 
         item { Spacer(modifier = Modifier.height(24.dp)) }

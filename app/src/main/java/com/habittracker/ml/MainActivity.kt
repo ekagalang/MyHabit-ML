@@ -32,6 +32,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import com.habittracker.ml.data.local.preferences.AuthPreferences
+import com.habittracker.ml.data.remote.ApiClient
+import com.habittracker.ml.ui.navigation.Screen
 import com.habittracker.ml.ui.screens.OnboardingScreen
 
 class MainActivity : ComponentActivity() {
@@ -71,7 +74,18 @@ class MainActivity : ComponentActivity() {
                 else -> isSystemInDarkTheme()
             }
             val appPreferences = remember { AppPreferences(this@MainActivity) }
+            val authPreferences = remember { AuthPreferences(this@MainActivity) }
             var showOnboarding by remember { mutableStateOf(!appPreferences.isOnboardingCompleted) }
+
+            // Initialize ApiClient
+            ApiClient.init(this@MainActivity)
+
+            // Determine start destination based on auth state
+            val startDestination = if (authPreferences.isLoggedIn()) {
+                Screen.Home.route
+            } else {
+                Screen.Login.route
+            }
 
             MyHabitTheme(darkTheme = isDark) {
                 val systemUiController = rememberSystemUiController()
@@ -91,7 +105,7 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 } else {
-                    MainScreen()
+                    MainScreen(startDestination = startDestination)
                 }
             }
         }

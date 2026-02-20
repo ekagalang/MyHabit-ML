@@ -25,16 +25,20 @@ import com.habittracker.ml.ui.navigation.Screen
 import com.habittracker.ml.ui.theme.*
 
 @Composable
-fun MainScreen() {
+fun MainScreen(startDestination: String = Screen.Home.route) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
     val isHomeSelected = currentDestination?.hierarchy?.any { it.route == Screen.Home.route } == true
 
+    // Hide bottom bar on auth screens
+    val isAuthScreen = currentDestination?.route in listOf(Screen.Login.route, Screen.Register.route)
+
     Scaffold(
         containerColor = BackgroundLight,
         bottomBar = {
+            if (isAuthScreen) return@Scaffold
             Column(modifier = Modifier.fillMaxWidth()) {
                 HorizontalDivider(
                     color = BorderLight.copy(alpha = 0.7f),
@@ -106,7 +110,7 @@ fun MainScreen() {
             }
         },
         floatingActionButton = {
-            if (isHomeSelected) {
+            if (isHomeSelected && !isAuthScreen) {
                 SmallFloatingActionButton(
                     onClick = { navController.navigate(Screen.AddHabit.route) },
                     containerColor = Primary,
@@ -127,7 +131,7 @@ fun MainScreen() {
         }
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
-            NavGraph(navController = navController)
+            NavGraph(navController = navController, startDestination = startDestination)
         }
     }
 }

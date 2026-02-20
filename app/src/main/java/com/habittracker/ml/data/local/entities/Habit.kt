@@ -22,5 +22,9 @@ data class Habit(
     val icon: String = "🎯", // emoji icon
 
     val createdAt: Long = System.currentTimeMillis(),
-    val isActive: Boolean = true
+    val isActive: Boolean = true,
+
+    // Server sync fields
+    val serverId: Long? = null,
+    val isSynced: Boolean = false
 )

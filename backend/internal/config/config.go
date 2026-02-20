@@ -16,7 +16,6 @@ type Config struct {
 	DBUser             string
 	DBPassword         string
 	DBName             string
-	DBSSLMode          string
 	JWTSecret          string
 	JWTExpirationHours int
 	AllowedOrigins     string
@@ -35,11 +34,10 @@ func Load() (*Config, error) {
 		ServerPort:         getEnv("PORT", "8080"),
 		GinMode:            getEnv("GIN_MODE", "debug"),
 		DBHost:             getEnv("DB_HOST", "localhost"),
-		DBPort:             getEnv("DB_PORT", "5432"),
-		DBUser:             getEnv("DB_USER", "postgres"),
+		DBPort:             getEnv("DB_PORT", "3306"),
+		DBUser:             getEnv("DB_USER", "root"),
 		DBPassword:         getEnv("DB_PASSWORD", ""),
 		DBName:             getEnv("DB_NAME", "myhabit_db"),
-		DBSSLMode:          getEnv("DB_SSLMODE", "disable"),
 		JWTSecret:          getEnv("JWT_SECRET", ""),
 		JWTExpirationHours: jwtExpHours,
 		AllowedOrigins:     getEnv("ALLOWED_ORIGINS", "*"),
@@ -61,7 +59,7 @@ func getEnv(key, defaultValue string) string {
 
 func (c *Config) GetDSN() string {
 	return fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		c.DBHost, c.DBPort, c.DBUser, c.DBPassword, c.DBName, c.DBSSLMode,
+		"%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		c.DBUser, c.DBPassword, c.DBHost, c.DBPort, c.DBName,
 	)
 }

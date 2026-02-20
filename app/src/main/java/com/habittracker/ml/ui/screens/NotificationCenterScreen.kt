@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Notifications
@@ -71,8 +70,8 @@ fun NotificationCenterScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             if (items.isEmpty()) {
                 item {
@@ -89,65 +88,67 @@ fun NotificationCenterScreen(
 
 @Composable
 private fun NotificationItemCard(item: NotificationHistoryItem) {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = SurfaceLight,
-        shadowElevation = 1.dp
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.weight(1f)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            Surface(
+                shape = CircleShape,
+                color = Primary.copy(alpha = 0.12f),
+                modifier = Modifier.size(28.dp)
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = Primary.copy(alpha = 0.15f),
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = null,
-                            tint = Primary
-                        )
-                    }
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = item.title,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = TextMain
-                    )
-                    Text(
-                        text = item.message,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextMuted
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = null,
+                        tint = Primary,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
 
-            Column(horizontalAlignment = Alignment.End) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = DateUtils.formatDate(item.timestamp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextMuted
+                    text = item.title,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextMain
                 )
                 Text(
-                    text = DateUtils.formatTime(item.timestamp),
+                    text = item.message,
                     style = MaterialTheme.typography.labelSmall,
                     color = TextMuted
                 )
             }
         }
+
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = DateUtils.formatDate(item.timestamp),
+                style = MaterialTheme.typography.labelSmall,
+                color = TextMuted
+            )
+            Text(
+                text = DateUtils.formatTime(item.timestamp),
+                style = MaterialTheme.typography.labelSmall,
+                color = TextMuted
+            )
+        }
     }
+
+    HorizontalDivider(
+        modifier = Modifier.padding(start = 38.dp),
+        thickness = 0.5.dp,
+        color = TextMuted.copy(alpha = 0.15f)
+    )
 }
 
 @Composable

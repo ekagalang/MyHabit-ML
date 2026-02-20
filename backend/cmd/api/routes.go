@@ -41,6 +41,7 @@ func setupRoutes(r *gin.Engine, cfg *config.Config) {
 		{
 			// Auth
 			protected.GET("/auth/profile", authHandler.GetProfile)
+			protected.PUT("/auth/change-password", authHandler.ChangePassword)
 
 			// Habits
 			habits := protected.Group("/habits")
